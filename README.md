@@ -4,6 +4,15 @@ This repository stages the electric-drives project deliverables for SRM speed/to
 It contains normalized milestone-aware report filenames, extracted text, and reproducibility
 instructions for the IEEE-style paper source.
 
+> **Paper:** The milestone report is available in `docs/reports/m1_srm_theoretical_background_report.pdf`.
+
+## Visual Highlights
+
+<p align="center">
+	<img src="assets/figures/m1_cover_sheet_preview.png" alt="Cover page preview of the SRM milestone report" width="520"/>
+</p>
+<p align="center"><em>Figure 1. Cover-page preview of the IEEE-style milestone report for SRM speed and torque control.</em></p>
+
 ## Team
 
 | Name | Student ID |
@@ -28,6 +37,8 @@ srm-speed-torque-control/
 │       └── m1_srm_theoretical_background_report.pdf
 ├── assets/
 │   └── figures/
+│       ├── m1_cover_sheet_preview.png
+│       └── m1_report_preview.png
 ├── README.md
 └── LICENSE
 ```
