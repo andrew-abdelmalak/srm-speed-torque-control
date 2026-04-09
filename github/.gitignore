@@ -1,0 +1,17 @@
+# LaTeX artifacts
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.toc
+
+# MATLAB artifacts
+*.asv
+*.autosave
+
+# OS/editor artifacts
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
