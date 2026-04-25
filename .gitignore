@@ -9,7 +9,8 @@
 # MATLAB artifacts
 *.asv
 *.autosave
-
+resources/project/*.xml
+SRM control/SRM_params.m
 # OS/editor artifacts
 .DS_Store
 Thumbs.db
