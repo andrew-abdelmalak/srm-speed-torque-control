@@ -9,8 +9,16 @@
 # MATLAB artifacts
 *.asv
 *.autosave
+
+slprj/
+*.slxc
+
+*.mat
+
 resources/project/*.xml
 SRM control/SRM_params.m
+
+
 # OS/editor artifacts
 .DS_Store
 Thumbs.db
