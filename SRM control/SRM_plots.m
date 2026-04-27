@@ -76,8 +76,8 @@ ylabel('Torque (N.m)', 'FontSize', 14, 'FontWeight', 'bold');
 title('Electromagnetic Torque vs Load Torque', 'FontSize', 16);
 legend('Electromagnetic Torque (T_e)', 'Load Torque (T_L)', 'Location', 'best');
 
-%% Export for Report (Uncomment to use)
-%The following commands will save perfect, high-resolution PNGs to your folder
-% exportgraphics(fig1, 'Speed_Response.png', 'Resolution', 300);
-% exportgraphics(fig2, 'Phase_Currents.png', 'Resolution', 300);
-% exportgraphics(fig3, 'Torque_Ripple.png', 'Resolution', 300);
+% Export for Report (Uncomment to use)
+% The following commands will save perfect, high-resolution PNGs to your folder
+exportgraphics(fig1, 'Speed_Response.png', 'Resolution', 300);
+exportgraphics(fig2, 'Phase_Currents.png', 'Resolution', 300);
+exportgraphics(fig3, 'Torque_Ripple.png', 'Resolution', 300);
