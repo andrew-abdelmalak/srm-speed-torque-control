@@ -378,7 +378,7 @@ Fig.~\ref{fig:blockdiagram} shows the complete cascaded architecture.
 %% ---- FIGURE 2: Block Diagram (two columns wide) ----
 \begin{figure*}[t]
 \centering
-\begin{tikzpicture}[
+\begin{tikzpicture}[scale=0.77,
   block/.style={rectangle, draw, rounded corners=3pt,
     fill=blue!7, minimum height=2.1em, text width=2.1cm,
     text centered, align=center, font=\small},
@@ -540,9 +540,10 @@ TC & $\omega^*$ (rad/s) & $T_L$ (N\,m) & Description \\
 \subsection{TC1 --- Baseline (100\,rad/s, 1.5\,N\,m Step)}
 Fig.~\ref{fig:tc1} shows the TC1 transient. The rotor accelerates from rest
 and reaches the 100\,rad/s reference with a critically-damped response in
-approximately 25\,ms. The anti-windup-clamped PI commands $T_{\max}=5$\,N\,m
-during the startup transient; the electromagnetic torque peaks near 17\,N\,m
-before settling to the load equilibrium of 1.601\,N\,m. After the 1.5\,N\,m
+approximately 30\,ms. The anti-windup integrator clamps the PI output at
+$T_{\max}=5$\,N\,m throughout the startup transient; the electromagnetic
+torque is therefore bounded at 5\,N\,m before settling to the load
+equilibrium of 1.601\,N\,m. After the 1.5\,N\,m
 step load is applied at $t=0.1$\,s, the speed dip is negligible and zero
 steady-state error is immediately restored. Phase currents exhibit the
 expected three-phase commutation pattern with smooth transitions enforced by
@@ -553,10 +554,10 @@ the cubic TSF.
 \includegraphics[width=\columnwidth]{fig_tc1}
 \caption{TC1 Baseline ($\omega^*=100$\,rad/s, $T_L=1.5$\,N\,m step at
   $t=0.1$\,s). (a)~Speed tracking: reference dashed, response solid;
-  zero steady-state error, rise time $\approx32$\,ms.
+  zero steady-state error, rise time $\approx29$\,ms.
   (b)~Three-phase currents: smooth cubic-TSF transitions at commutation.
   (c)~Electromagnetic torque $T_e$ (purple) and load torque $T_L$ (dashed);
-  mean steady-state $T_e=1.600$\,N\,m, peak current $\hat{i}=7.27$\,A.}
+  mean steady-state $T_e=1.601$\,N\,m, peak phase current $\hat{i}=7.21$\,A.}
 \label{fig:tc1}
 \end{figure}
 
@@ -648,7 +649,8 @@ A gain-scheduling or model-reference adaptive scheme would eliminate this
 manual step in a production implementation. Two primary directions are
 identified for future work: (i)~speed-dependent advance-angle control for
 high-speed single-pulse operation; and (ii)~soft-start logic to suppress the
-large startup torque transient observed in TC1 ($T_{e,\mathrm{peak}}\approx17$\,N\,m),
+large startup current inrush observed in TC1 (PI output saturates at
+$T_{\max}=5$\,N\,m throughout the startup transient),
 consistent with directions identified in~\cite{Zhu2015}.
 
 %% ------------------------------------------------------------
