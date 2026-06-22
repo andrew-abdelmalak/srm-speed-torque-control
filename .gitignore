@@ -1,0 +1,47 @@
+# ── MATLAB / Simulink build artefacts ────────────────────────────────────────
+slprj/
+*.slxc
+*.autosave
+*.asv
+*.mex*
+*.mexa64
+*.mexw64
+*.mexmaci64
+codegen/
+work/
+
+# ── MATLAB data files (cache, not source) ────────────────────────────────────
+*.mat
+!src/*.mat
+
+# ── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+
+# ── LaTeX build artefacts ─────────────────────────────────────────────────────
+paper/*.aux
+paper/*.bbl
+paper/*.blg
+paper/*.log
+paper/*.out
+paper/*.toc
+paper/*.fls
+paper/*.fdb_latexmk
+paper/*.synctex.gz
+paper/_minted-*/
+
+# ── OS / editor ───────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+*.code-workspace

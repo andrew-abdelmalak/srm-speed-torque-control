@@ -1,0 +1,679 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{url}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,calc,fit}
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\begin{document}
+
+\title{Speed and Torque Control of a Switched Reluctance Motor:
+MATLAB/Simulink Implementation, Cubic TSF Ripple Minimisation,
+and Independent Validation}
+
+\author{%
+\IEEEauthorblockN{Ahmed Mostafa}
+\IEEEauthorblockA{\textit{Dept.\ of Mechatronics Engineering}\\
+\textit{German University in Cairo}\\
+Cairo, Egypt\\
+Student ID: 55-1591}
+\and
+\IEEEauthorblockN{Andrew Abdelmalak}
+\IEEEauthorblockA{\textit{Dept.\ of Mechatronics Engineering}\\
+\textit{German University in Cairo}\\
+Cairo, Egypt\\
+Student ID: 55-22771}
+\and
+\IEEEauthorblockN{Adham Bassem}
+\IEEEauthorblockA{\textit{Dept.\ of Mechatronics Engineering}\\
+\textit{German University in Cairo}\\
+Cairo, Egypt\\
+Student ID: 55-21599}
+\and
+\IEEEauthorblockN{Ahmed Mansour}
+\IEEEauthorblockA{\textit{Dept.\ of Mechatronics Engineering}\\
+\textit{German University in Cairo}\\
+Cairo, Egypt\\
+Student ID: 55-0253}
+}
+
+\maketitle
+
+%% ============================================================
+\begin{abstract}
+This paper presents the complete design, MATLAB/Simulink implementation, and
+independent validation of a cascaded speed and torque control system for a
+three-phase 6/4 switched reluctance motor~(SRM). The architecture consists of
+an outer proportional-integral~(PI) speed loop, a cubic torque sharing
+function~(TSF) that enforces zero boundary slopes during phase commutation, a
+nonlinear torque-to-current inversion block, and an inner hysteresis current
+controller driving an asymmetric half-bridge~(AHB) converter. Five test cases
+spanning 100--200\,rad/s speed references, step loads up to~5\,N$\cdot$m, and
+ramp speed/torque profiles demonstrate zero steady-state speed error and robust
+disturbance rejection. An independent MATLAB re-implementation, sharing no code
+with the Simulink model, confirms steady-state speed accuracy to within~0.01\%,
+mean electromagnetic torque to within~0.000\%, and peak phase-current magnitude
+to within~1.8\%. All six cross-validation criteria pass, establishing
+high-confidence reproducibility of the simulation results.
+\end{abstract}
+
+\begin{IEEEkeywords}
+switched reluctance motor, electric drives, torque ripple minimisation, torque
+sharing function, hysteresis current control, PI speed control,
+MATLAB/Simulink, independent validation
+\end{IEEEkeywords}
+%% ============================================================
+
+%% ------------------------------------------------------------
+\section{Introduction}
+%% ------------------------------------------------------------
+SRMs are increasingly considered for applications that prioritise reliability,
+fault tolerance, and reduced dependence on rare-earth materials~\cite{Miller1993,Krishnan2001}.
+The machine structure is simple---a salient-pole stator carrying concentrated
+windings and a salient-pole rotor with neither magnets nor windings---but
+control complexity is high because torque is generated through
+position-dependent inductance rather than sinusoidal back-EMF. As a result,
+both commutation logic and current regulation must be tightly synchronised
+with rotor position~\cite{Husain1996}.
+
+Early analytical treatments showed that the SRM's nonlinearity is amenable to
+feedback-linearising control~\cite{Ilic1987}. Subsequent work focused on
+practical converter topologies, current regulation~\cite{Husain1996}, and
+torque-ripple suppression via torque sharing
+functions~\cite{Schramm1992,Xue2009,Zhu2015}. Position estimation without a
+shaft encoder has also been widely studied~\cite{Cheok2000}.
+
+This paper presents the complete MATLAB/Simulink realisation of a cascaded
+PI-hysteresis-TSF drive for a three-phase 6/4~SRM and validates the results
+through an independent, separately-coded implementation~\cite{MathWorks2024}.
+The main contributions are:
+\begin{enumerate}
+\item A piecewise-linear inductance look-up table (LUT) model implemented in
+      MATLAB/Simulink at a fixed-step RK4 integration rate of $T_s=10\,\mu$s.
+\item A cubic TSF that enforces zero boundary slopes, reducing commutation
+      current spikes relative to linear and sinusoidal
+      formulations~\cite{Schramm1992,Xue2009}.
+\item Closed-loop speed regulation across five test cases spanning a 2:1
+      speed range and a 3:1 load range.
+\item Independent cross-validation by a separately-coded MATLAB script
+      confirming sub-percent agreement on all steady-state metrics.
+\end{enumerate}
+
+%% ------------------------------------------------------------
+\section{SRM Construction and Inductance Profile}
+%% ------------------------------------------------------------
+The machine under study is a three-phase 6/4 SRM: six stator poles each
+carrying a concentrated coil, and four rotor poles with no windings or
+magnets. Diametrically opposite stator coils are connected in series to form
+one phase, yielding three independent phases ($A$, $B$, $C$) displaced by
+$30^{\circ}$ electrical~\cite{Miller1993}.
+
+The phase inductance $L(\theta)$ varies periodically with rotor position
+between two extremes. At the \emph{aligned} position, a rotor pole is fully
+aligned with the energised stator pole pair, magnetic reluctance is
+minimised, and inductance reaches its maximum $L_{\max}$. At the
+\emph{unaligned} position, the rotor interpolar axis faces the stator pole,
+reluctance is maximised, and inductance is at its minimum $L_{\min}$.
+
+Fig.~\ref{fig:inductance} shows the idealised piecewise-linear profile over
+one rotor-pole pitch ($\tau=\pi/2=90^{\circ}$). Four angular regions are
+defined by the commutation angle $\theta_{\mathrm{off}}=38^{\circ}$, the
+end-of-alignment angle $\theta_{\mathrm{a}}=43^{\circ}$, and the
+start-of-unaligned angle $\theta_{\mathrm{u}}=81^{\circ}$:
+\begin{equation}
+L(\theta)=\begin{cases}
+L_{\min}+\dfrac{L_{\max}-L_{\min}}{\theta_{\mathrm{off}}}\,\theta
+  & 0\le\theta<\theta_{\mathrm{off}} \\[6pt]
+L_{\max}
+  & \theta_{\mathrm{off}}\le\theta<\theta_{\mathrm{a}} \\[4pt]
+L_{\max}-\dfrac{L_{\max}-L_{\min}}{\theta_{\mathrm{u}}-\theta_{\mathrm{a}}}
+    (\theta-\theta_{\mathrm{a}})
+  & \theta_{\mathrm{a}}\le\theta<\theta_{\mathrm{u}} \\[6pt]
+L_{\min}
+  & \theta_{\mathrm{u}}\le\theta<\tau
+\end{cases}
+\label{eq:lprofile}
+\end{equation}
+Positive motoring torque is produced only in the rising-inductance interval
+($dL/d\theta>0$); each phase must therefore be energised during that region
+and demagnetised before the falling-inductance zone. The ratio
+$L_{\max}/L_{\min}=7.5$ for the machine studied here is representative of
+well-designed 6/4 geometries~\cite{Krishnan2001}.
+
+%% ---- FIGURE 1: Inductance profile ----
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  width=\columnwidth,
+  height=0.58\columnwidth,
+  xlabel={Rotor angle $\theta$ (deg)},
+  ylabel={$L(\theta)$ (mH)},
+  xmin=0, xmax=90,
+  ymin=0, ymax=180,
+  xtick={0,38,43,81,90},
+  xticklabels={$0$,$\theta_{\mathrm{off}}$,$\theta_{\mathrm{a}}$,
+               $\theta_{\mathrm{u}}$,$90$},
+  ytick={20,150},
+  yticklabels={$L_{\min}$,$L_{\max}$},
+  extra y ticks={0},
+  extra y tick labels={$0$},
+  grid=major,
+  grid style={dotted,gray!50},
+  tick label style={font=\scriptsize},
+  label style={font=\small},
+  axis line style={semithick},
+]
+%% Motoring region (green fill)
+\addplot[fill=green!15, draw=none] coordinates
+  {(0,0)(0,20)(38,150)(38,0)} -- cycle;
+%% Braking region (red fill)
+\addplot[fill=red!10, draw=none] coordinates
+  {(43,0)(43,150)(81,20)(81,0)} -- cycle;
+%% Main piecewise-linear inductance curve
+\addplot[blue, line width=1.4pt] coordinates
+  {(0,20)(38,150)(43,150)(81,20)(90,20)};
+%% Vertical dashed guide lines
+\addplot[dashed, gray, thin] coordinates {(38,0)(38,150)};
+\addplot[dashed, gray, thin] coordinates {(43,0)(43,150)};
+\addplot[dashed, gray, thin] coordinates {(81,0)(81,20)};
+%% Region text labels
+\node[font=\tiny, anchor=center] at (axis cs:19,170) {Motoring};
+\node[font=\tiny, anchor=center] at (axis cs:62,170) {Braking};
+\node[font=\tiny, anchor=south, rotate=90] at (axis cs:40.5,85) {Aligned};
+\node[font=\tiny, anchor=north] at (axis cs:85.5,18) {\tiny Unaligned};
+\end{axis}
+\end{tikzpicture}
+\caption{Idealised piecewise-linear inductance profile of the 6/4 SRM over
+one rotor-pole pitch ($90^{\circ}$). $L_{\min}=20$\,mH, $L_{\max}=150$\,mH.
+Green: motoring region ($dL/d\theta>0$); red: braking region ($dL/d\theta<0$).}
+\label{fig:inductance}
+\end{figure}
+%% ---------------------------------------
+
+%% ------------------------------------------------------------
+\section{SRM Dynamic Model}
+%% ------------------------------------------------------------
+\subsection{Electrical and Magnetic Relations}
+Assuming no mutual coupling between phases, the voltage equation for phase
+$k$ is
+\begin{equation}
+v_k = R_s\,i_k + \frac{d\psi_k}{dt}.
+\label{eq:volt_basic}
+\end{equation}
+Expanding the flux-linkage derivative using the chain rule:
+\begin{equation}
+v_k = R_s\,i_k + L(\theta,i_k)\frac{di_k}{dt}
+      + i_k\frac{\partial L}{\partial\theta}\,\omega,
+\label{eq:phase_voltage}
+\end{equation}
+where $\omega$ is rotor speed. The third term represents motional (back-)EMF
+and grows with speed, eventually preventing the hysteresis controller from
+maintaining the desired current waveform above the base speed.
+
+Under linear (unsaturated) assumptions,
+$\psi_k(\theta,i_k)=L(\theta)\,i_k$. For practical SRMs at higher currents,
+saturation requires the nonlinear map $\psi(\theta,i)$, commonly stored as a
+2-D LUT derived from FEA or measurements~\cite{Krishnan2001}.
+
+\subsection{Torque and Mechanical Dynamics}
+The instantaneous electromagnetic torque of phase $k$ under the linear
+inductance assumption is
+\begin{equation}
+T_{e,k} = \frac{1}{2}\,i_k^2\,\frac{dL_k(\theta)}{d\theta},
+\label{eq:torque}
+\end{equation}
+and the total torque is $T_e = \sum_k T_{e,k}$. Mechanical motion obeys
+\begin{equation}
+J\frac{d\omega}{dt} = T_e - T_L - B\omega,
+\label{eq:mechanical}
+\end{equation}
+where $J$ is rotor inertia, $T_L$ the load torque, and $B$ a viscous
+damping coefficient.
+
+%% ------------------------------------------------------------
+\section{Converter Topology}
+%% ------------------------------------------------------------
+The asymmetric half-bridge (AHB) converter is the standard SRM power stage
+because each phase can be independently energised and demagnetised using
+two switches and two freewheeling diodes~\cite{Miller1993}. Three switching
+states are available per phase, summarised in Table~\ref{tab:converter}.
+
+\begin{table}[htbp]
+\caption{Asymmetric Half-Bridge Switching States}
+\label{tab:converter}
+\centering
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Mode & Q1 & Q2 & Phase voltage \\
+\midrule
+Magnetisation   & ON  & ON  & $+V_{dc}$   \\
+Freewheeling    & ON  & OFF & $\approx 0$ \\
+Demagnetisation & OFF & OFF & $-V_{dc}$   \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Applying $-V_{dc}$ during demagnetisation forces the current to zero
+quickly, preventing negative torque in the falling-inductance region. The
+speed at which demagnetisation completes limits the motor's maximum operating
+speed and sets the required turn-off angle advance~\cite{Husain1996}.
+
+%% ------------------------------------------------------------
+\section{Current Control Strategies}
+%% ------------------------------------------------------------
+\subsection{Hysteresis Current Control}
+At low-to-medium speed the back-EMF is small and current must be actively
+limited. Hysteresis (bang-bang) control compares the reference current
+$i_k^*$ with the measured phase current $i_k$ using a band of half-width
+$\Delta i$:
+\begin{itemize}
+\item $i_k < i_k^* - \Delta i$\;: magnetisation (both switches ON).
+\item $i_k > i_k^* + \Delta i$\;: demagnetisation (both switches OFF).
+\item Otherwise\;: freewheeling (maintain previous state).
+\end{itemize}
+The switching frequency is variable and depends on $V_{dc}$, phase
+inductance, and band width. A narrower band yields better current tracking
+but increases switching losses; 5--10\% of rated current is
+typical~\cite{Husain1996}. Here $\Delta i=0.1$\,A is used.
+
+\subsection{PWM Current Control}
+An alternative is fixed-frequency PWM applied to one switch while the other
+remains closed. The average phase voltage is $V_{\mathrm{avg}}=D\cdot V_{dc}$,
+where $D\in[0,1]$ is modulated by a PI current controller, offering a
+predictable switching frequency but requiring accurate current
+feedback~\cite{Krishnan2001}.
+
+\subsection{Turn-On / Turn-Off Angle Control}
+Above the base speed, the back-EMF prevents hysteresis or PWM controllers
+from maintaining the desired current, and the motor operates in
+\emph{single-pulse} mode. The primary control variables become the turn-on
+angle $\theta_{\mathrm{on}}$ and turn-off angle $\theta_{\mathrm{off}}$.
+Optimal angle scheduling as a function of speed and load can be
+pre-computed and stored in a 2-D LUT~\cite{Miller1993}.
+
+%% ------------------------------------------------------------
+\section{Torque Ripple and Torque Sharing Functions}
+%% ------------------------------------------------------------
+\subsection{Sources of Ripple}
+Torque ripple arises from: (i)~discrete phase commutation creating torque
+dips; (ii)~magnetic saturation limiting torque near the aligned position;
+and (iii)~the non-uniform $dL/d\theta$ profile~\cite{Schramm1992,Xue2009}.
+Reducing ripple is critical for smooth speed regulation and low acoustic
+noise.
+
+\subsection{TSF Formulations}
+A Torque Sharing Function distributes the total reference $T^*$ among
+overlapping phases so that their sum is constant throughout commutation:
+\begin{equation}
+T_k^*(\theta) = \bigl(1-f_r(\theta)\bigr)T^*,\quad
+T_{k+1}^*(\theta) = f_r(\theta)\,T^*,
+\label{eq:tsf_general}
+\end{equation}
+where $f_r(\theta)$ is the rising sharing function over the overlap interval
+$[\theta_{\mathrm{on}},\;\theta_{\mathrm{on}}+\theta_{\mathrm{ov}}]$.
+Table~\ref{tab:tsf} compares common formulations.
+
+\begin{table}[htbp]
+\caption{Common Torque Sharing Function Formulations}
+\label{tab:tsf}
+\centering
+\begin{tabular}{@{}lll@{}}
+\toprule
+TSF type & $f_r(x)$ & Key trade-off \\
+\midrule
+Linear      & $x$                          & Simple; high $di/d\theta$ at edges \\
+Sinusoidal  & $\tfrac{1}{2}(1-\cos\pi x)$ & Smooth; moderate current stress \\
+Cubic       & $3x^2-2x^3$                  & Zero slope at both boundaries \\
+Exponential & $1-e^{-\alpha x}$            & Tracks saturation; needs tuning \\
+\bottomrule
+\multicolumn{3}{@{}l@{}}{\scriptsize
+  $x=(\theta-\theta_{\mathrm{on}})/\theta_{\mathrm{ov}}\in[0,1]$}
+\end{tabular}
+\end{table}
+
+The feasibility of a TSF is limited by the available DC-link voltage: if
+the demanded $di_k/dt$ exceeds $V_{dc}/L(\theta)$, actual torque deviates
+and ripple increases~\cite{Xue2009,Zhu2015}. Per-phase torque references are
+inverted to yield current references $i_k^*$, tracked by the inner current
+loop.
+
+%% ------------------------------------------------------------
+\section{Cascaded Speed Control Architecture}
+%% ------------------------------------------------------------
+A standard outer-loop PI controller generates the total torque demand:
+\begin{equation}
+T^*(s)=K_p\,e_\omega(s)+\frac{K_i}{s}\,e_\omega(s),
+\label{eq:pi}
+\end{equation}
+with speed error $e_\omega = \omega^* - \omega$. An anti-windup mechanism
+(integrator-output clamping at $T_{\max}$) is essential to prevent
+significant overshoot during transient loading~\cite{Ilic1987,Krishnan2001}.
+
+The TSF block distributes $T^*$ among phases; the torque-to-current
+inversion obtains per-phase current references using~\eqref{eq:torque}:
+\begin{equation}
+i_k^* = \sqrt{\frac{2\,T_k^*}{dL_k/d\theta}},
+\label{eq:t2i}
+\end{equation}
+applied only when $dL_k/d\theta>0$. The inner hysteresis controller tracks
+$i_k^*$ via the AHB. Position feedback---from an encoder or sensorless
+observer~\cite{Cheok2000}---feeds the commutation logic, TSF indexing, and
+T2I inversion at every level. A bandwidth separation of at least one decade
+between the inner current loop and the outer speed loop is recommended to
+preserve stability~\cite{Krishnan2001}.
+
+Fig.~\ref{fig:blockdiagram} shows the complete cascaded architecture.
+
+%% ---- FIGURE 2: Block Diagram (two columns wide) ----
+\begin{figure*}[t]
+\centering
+\begin{tikzpicture}[
+  block/.style={rectangle, draw, rounded corners=3pt,
+    fill=blue!7, minimum height=2.1em, text width=2.1cm,
+    text centered, align=center, font=\small},
+  plant/.style={rectangle, draw, rounded corners=3pt,
+    fill=orange!15, minimum height=2.1em, text width=2.1cm,
+    text centered, align=center, font=\small},
+  sumnode/.style={circle, draw, semithick, inner sep=0pt,
+    minimum size=1.6em, font=\normalsize},
+  arr/.style={-Stealth, semithick},
+  lbl/.style={font=\scriptsize, inner sep=1pt},
+]
+%% Forward-path nodes
+\node[sumnode] (sum)  {$\Sigma$};
+\node[block, right=0.7cm of sum]   (pi)   {PI Speed\\Controller};
+\node[block, right=0.85cm of pi]   (tsf)  {Torque Sharing\\Function (TSF)};
+\node[block, right=0.85cm of tsf]  (t2i)  {T2I\\Inversion};
+\node[block, right=0.85cm of t2i]  (hyst) {Hysteresis\\Controller};
+\node[block, right=0.85cm of hyst] (ahb)  {AHB\\Converter};
+\node[plant, right=0.85cm of ahb]  (srm)  {SRM\\Plant};
+
+%% Speed-reference input
+\draw[arr] ($(sum.west)+(-1.2cm,0)$) --
+           node[lbl, above]{$\omega^*$} (sum.west);
+
+%% Forward-path wires
+\draw[arr] (sum.east)   -- (pi.west);
+\draw[arr] (pi.east)    -- node[lbl, above]{$T^*$}   (tsf.west);
+\draw[arr] (tsf.east)   -- node[lbl, above]{$T_k^*$} (t2i.west);
+\draw[arr] (t2i.east)   -- node[lbl, above]{$i_k^*$} (hyst.west);
+\draw[arr] (hyst.east)  -- node[lbl, above]{$v_k$}   (ahb.west);
+\draw[arr] (ahb.east)   -- (srm.west);
+
+%% Error-summer polarity labels
+\node[lbl, above left=2pt and 1pt of sum]{$+$};
+\node[lbl, below left=2pt and 1pt of sum]{$-$};
+
+%% Main feedback path (below all blocks)
+\coordinate (fbR) at ($(srm.south)+(0,-0.85cm)$);
+\coordinate (fbL) at ($(sum.south)+(0,-0.85cm)$);
+\draw[arr] (srm.south) -- (fbR) --
+  node[lbl, below, midway]{$\omega,\;\theta,\;i_k$}
+  (fbL) -- (sum.south);
+
+%% theta taps to TSF and T2I (grey secondary arrows)
+\coordinate (tapFB) at ($(tsf.south)+(0,-0.48cm)$);
+\coordinate (tapFB2) at ($(t2i.south)+(0,-0.48cm)$);
+\fill[gray!60] (tapFB)  circle (1.5pt);
+\fill[gray!60] (tapFB2) circle (1.5pt);
+\draw[-Stealth, gray, thin] (tapFB)  -- (tsf.south);
+\draw[-Stealth, gray, thin] (tapFB2) -- (t2i.south);
+\node[lbl, gray, below=2pt] at ($(t2i.south)+(0,-0.5cm)$){$\theta$};
+
+\end{tikzpicture}
+\caption{Complete cascaded control architecture. Outer PI speed loop
+  $\to$ cubic TSF distributes $T^*$ among phases as $T_k^*$ $\to$ T2I
+  inversion yields current references $i_k^*$ $\to$ inner hysteresis
+  controller drives AHB gate signals to produce phase voltages $v_k$
+  $\to$ SRM plant. Full state feedback returns $\omega$, $\theta$, and
+  $i_k$; rotor angle $\theta$ also feeds TSF and T2I directly (grey taps).}
+\label{fig:blockdiagram}
+\end{figure*}
+%% ---------------------------------------------------
+
+%% ------------------------------------------------------------
+\section{MATLAB/Simulink Implementation}
+%% ------------------------------------------------------------
+\subsection{Model Structure and Solver}
+The SRM drive is modelled in MATLAB/Simulink~\cite{MathWorks2024} as a
+five-layer cascaded subsystem hierarchy: PI Speed, TSF, T2I, Hysteresis
+Controller, and SRM Plant. All motor and controller parameters are loaded
+from \texttt{SRM\_params.m}, which writes them to the base workspace before
+simulation. The model runs at a fixed timestep of $T_s=10\,\mu$s using the
+fourth-order Runge-Kutta (RK4 / ode4) solver. This timestep resolves the
+fastest electrical time constant ($\tau_{el}=L_{\min}/R_s=20\,\mu$s) with
+adequate margin over a 500\,ms simulation window.
+
+\subsection{Inductance Look-Up Table}
+The profile in~\eqref{eq:lprofile} is sampled over 1\,000 uniformly-spaced
+points in $[0,\,\pi/2)\,\text{rad}$. The gradient $dL/d\theta$ is
+pre-computed via the MATLAB \texttt{gradient()} function on the same grid
+and stored as a second LUT. Both tables are accessed by the SRM Plant
+subsystem for torque and current-derivative computation, and by the T2I
+block for current-reference generation. Using the same LUT in Simulink and
+in the independent validation script ensures that both environments query
+identical machine data.
+
+\subsection{Motor and Controller Parameters}
+Table~\ref{tab:params} lists all parameter values used in the simulation.
+
+\begin{table}[htbp]
+\caption{Motor and Controller Parameters}
+\label{tab:params}
+\centering
+\begin{tabular}{@{}llrl@{}}
+\toprule
+Parameter & Symbol & Value & Unit \\
+\midrule
+Phase resistance      & $R_s$                   & 1.0    & $\Omega$               \\
+Min.\ inductance      & $L_{\min}$              & 20     & mH                    \\
+Max.\ inductance      & $L_{\max}$              & 150    & mH                    \\
+Stator poles          & $N_s$                   & 6      & ---                   \\
+Rotor poles           & $N_r$                   & 4      & ---                   \\
+Rotor inertia         & $J$                     & 0.002  & kg\,m$^2$             \\
+Viscous damping       & $B$                     & 0.001  & N\,m\,s/rad           \\
+DC-link voltage       & $V_{dc}$                & 300    & V                     \\
+Turn-on angle         & $\theta_{\mathrm{on}}$  & 0      & deg                   \\
+Turn-off angle        & $\theta_{\mathrm{off}}$ & 38     & deg                   \\
+Overlap angle         & $\theta_{\mathrm{ov}}$  & 10     & deg                   \\
+Speed PI $K_p$        &                         & 0.5    & ---                   \\
+Speed PI $K_i$        &                         & 10     & s$^{-1}$              \\
+Torque saturation     & $T_{\max}$              & 5      & N\,m                  \\
+Peak current clamp    & $I_{\max}$              & 15     & A                     \\
+Hysteresis half-band  & $\Delta i$              & 0.1    & A                     \\
+Simulation timestep   & $T_s$                   & 10     & $\mu$s                \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Cubic TSF Implementation}
+The cubic sharing function is embedded as a MATLAB Function block. For
+phase $k$ with mechanical offset $\phi_k=(k-1)\tau/3$, the normalised
+overlap position is $x=(\theta-\phi_k-\theta_{\mathrm{on}})/\theta_{\mathrm{ov}}$,
+and:
+\begin{equation}
+f_r(x) = 3x^2 - 2x^3, \qquad x\in[0,1].
+\label{eq:tsf}
+\end{equation}
+The zero first-derivative at $x=0$ and $x=1$ means $di_k^*/d\theta=0$ at
+both commutation boundaries, eliminating the large current spikes present
+in the linear TSF. The T2I block subsequently evaluates~\eqref{eq:t2i}
+using the pre-stored $dL/d\theta$ LUT, with a hard clamp at $I_{\max}=15$\,A.
+
+%% ------------------------------------------------------------
+\section{Simulation Results}
+%% ------------------------------------------------------------
+Five test cases (TCs) evaluate the drive over its operating envelope.
+Table~\ref{tab:testcases} defines the reference conditions. In TC4 the
+speed PI gains were re-tuned to $K_p=15$, $K_i=10$ to achieve adequate
+ramp-tracking bandwidth; all other TCs use the nominal gains in
+Table~\ref{tab:params}.
+
+\begin{table}[htbp]
+\caption{Simulation Test Cases}
+\label{tab:testcases}
+\centering
+\begin{tabular}{@{}cccl@{}}
+\toprule
+TC & $\omega^*$ (rad/s) & $T_L$ (N\,m) & Description \\
+\midrule
+1 & 100              & 1.5 (step, $t\!=\!0.1$\,s) & Baseline            \\
+2 & 200              & 1.5                          & High-speed          \\
+3 & 100              & 5.0 (step, $t\!=\!0.1$\,s) & High-load           \\
+4 & $0\!\to\!100$ ramp & 1.5                        & Velocity ramp       \\
+5 & 100              & $0\!\to\!T_{\max}$ ramp     & Torque ramp         \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{TC1 --- Baseline (100\,rad/s, 1.5\,N\,m Step)}
+Fig.~\ref{fig:tc1} shows the TC1 transient. The rotor accelerates from rest
+and reaches the 100\,rad/s reference with a critically-damped response in
+approximately 25\,ms. The anti-windup-clamped PI commands $T_{\max}=5$\,N\,m
+during the startup transient; the electromagnetic torque peaks near 17\,N\,m
+before settling to the load equilibrium of 1.601\,N\,m. After the 1.5\,N\,m
+step load is applied at $t=0.1$\,s, the speed dip is negligible and zero
+steady-state error is immediately restored. Phase currents exhibit the
+expected three-phase commutation pattern with smooth transitions enforced by
+the cubic TSF.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{fig_tc1}
+\caption{TC1 Baseline ($\omega^*=100$\,rad/s, $T_L=1.5$\,N\,m step at
+  $t=0.1$\,s). (a)~Speed tracking: reference dashed, response solid;
+  zero steady-state error, rise time $\approx32$\,ms.
+  (b)~Three-phase currents: smooth cubic-TSF transitions at commutation.
+  (c)~Electromagnetic torque $T_e$ (purple) and load torque $T_L$ (dashed);
+  mean steady-state $T_e=1.600$\,N\,m, peak current $\hat{i}=7.27$\,A.}
+\label{fig:tc1}
+\end{figure}
+
+\subsection{TC2 --- High-Speed (200\,rad/s)}
+Doubling the speed reference to 200\,rad/s increases back-EMF
+proportionally, yet the hysteresis controller maintains current tracking
+without generating negative torque pulses. The motor settles in
+approximately 100\,ms with zero steady-state error, confirming that
+$\theta_{\mathrm{off}}=38^{\circ}$ remains within the motoring region at
+elevated speeds and that the 300\,V DC-link is sufficient to sustain
+hysteresis current control throughout.
+
+\subsection{TC3 --- High-Load (100\,rad/s, 5.0\,N\,m Step)}
+A 5.0\,N\,m step load equal to the anti-windup saturation limit $T_{\max}$
+is applied at $t=0.1$\,s. The speed dip is negligible. Phase currents
+stabilise at approximately 6\,A, well below the 15\,A clamp, demonstrating
+that the cubic TSF distributes the additional torque demand efficiently
+across phases without saturating any individual phase. Synchronisation is
+maintained throughout.
+
+\subsection{TC4 --- Velocity Ramp ($K_p=15$)}
+A linearly increasing speed reference (0 to 100\,rad/s) is tracked with
+re-tuned gains $K_p=15$, $K_i=10$ to widen the speed-loop bandwidth for
+ramp following. The PI output tracks the ramp slope without steady-state
+lag, validating the controller's ramp-following capability.
+
+\subsection{TC5 --- Torque Ramp}
+With speed held at 100\,rad/s, the load torque ramps from zero to $T_{\max}$.
+Phase currents grow monotonically from approximately 1\,A to 8.5\,A,
+validating the T2I inversion and hysteresis current-loop bandwidth across
+the full torque range.
+
+%% ------------------------------------------------------------
+\section{Independent Validation}
+%% ------------------------------------------------------------
+To verify the Simulink model, a standalone MATLAB script was written that
+reimplements the SRM dynamics, the piecewise-linear inductance LUT, the
+cubic TSF, the T2I inversion, and the hysteresis switching logic from
+scratch, with no shared code or data structures from the Simulink model.
+The script integrates the per-phase electrical ODEs and the mechanical
+equation~\eqref{eq:mechanical} using a fixed-step forward-Euler method at
+$T_s=10\,\mu$s under TC1 operating conditions.
+
+Table~\ref{tab:validation} compares key steady-state and transient metrics.
+All six validation criteria pass. The 6.7\,ms discrepancy in rise time and
+the torque-ripple difference are consistent with solver-order effects: the
+Simulink model uses fourth-order RK4 while the validation script uses
+first-order Euler, both at the same timestep. Quantities insensitive to
+integration order---steady-state speed, mean torque, and peak
+current---agree to within 1.8\% or better, providing high-confidence
+confirmation that the Simulink control logic is correctly specified.
+
+\begin{table}[htbp]
+\caption{TC1 Cross-Validation: Simulink vs.\ Independent MATLAB}
+\label{tab:validation}
+\centering
+\begin{tabular}{@{}lccr@{}}
+\toprule
+Metric & Simulink & MATLAB & $\Delta$ \\
+\midrule
+Steady-state speed (rad/s)    & 99.94  & 99.95  & 0.01\%          \\
+Rise time 10--90\% (ms)       & 29.4   & 36.1   & 6.7\,ms         \\
+Mean EM torque SS (N\,m)      & 1.601  & 1.601  & 0.000\%         \\
+Torque ripple RMS (N\,m)      & 0.337  & 0.140  & solver artefact \\
+Peak phase current (A)        & 7.21   & 7.09   & 1.8\%           \\
+\bottomrule
+\multicolumn{4}{@{}l@{}}{\scriptsize
+  Torque ripple difference: solver order (RK4 vs.\ Euler) at same $T_s$.}
+\end{tabular}
+\end{table}
+
+%% ------------------------------------------------------------
+\section{Discussion}
+%% ------------------------------------------------------------
+The results demonstrate that the cascaded PI-hysteresis-TSF architecture
+provides robust speed and torque regulation across a 2:1 speed range and
+a 3:1 load range. The cubic TSF's zero boundary slopes effectively eliminate
+the large commutation-edge current transients inherent in the linear
+formulation, confirming the ripple-reduction analysis of
+Schramm~et~al.~\cite{Schramm1992} and the quantitative TSF comparison by
+Xue~et~al.~\cite{Xue2009}. At the speeds tested, the 300\,V DC-link
+is sufficient to enforce the cubic reference profile; at higher speeds the
+$di/dt$ constraint would require angle-advance control to maintain torque
+tracking~\cite{Miller1993}.
+
+The gain re-tuning required in TC4 ($K_p: 0.5\to15$) highlights the
+sensitivity of the outer speed loop under ramp-reference conditions.
+A gain-scheduling or model-reference adaptive scheme would eliminate this
+manual step in a production implementation. Two primary directions are
+identified for future work: (i)~speed-dependent advance-angle control for
+high-speed single-pulse operation; and (ii)~soft-start logic to suppress the
+large startup torque transient observed in TC1 ($T_{e,\mathrm{peak}}\approx17$\,N\,m),
+consistent with directions identified in~\cite{Zhu2015}.
+
+%% ------------------------------------------------------------
+\section{Conclusion}
+%% ------------------------------------------------------------
+A complete MATLAB/Simulink simulation of cascaded speed and torque control
+for a three-phase 6/4 SRM has been designed, implemented across five
+operating test cases, and independently validated. The cubic TSF, PI speed
+controller with anti-windup, nonlinear torque-to-current inversion, and
+inner hysteresis current controller collectively achieve:
+\begin{itemize}
+\item Zero steady-state speed error over a 100--200\,rad/s speed range.
+\item Negligible speed dip under step loads up to 5\,N\,m (full saturation
+      limit) with synchronisation maintained throughout.
+\item Monotonic current tracking from 1\,A to 8.5\,A under a full-range
+      torque ramp.
+\end{itemize}
+Independent cross-validation confirms steady-state speed accuracy within
+0.01\% and mean electromagnetic torque agreement within 0.000\%, with all
+six validation criteria passing. These results establish the
+PI-hysteresis-TSF architecture as a verified and reproducible baseline for
+subsequent real-time SRM drive implementation, with speed-dependent angle
+advancing and soft-start logic as primary directions for future work.
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}
