@@ -1,9 +1,11 @@
 # SRM Speed and Torque Control
 
-**MCTR 908 — Electric Drives · German University in Cairo · 2025/2026**
-**Group 13** | Ahmed Mostafa (55-1591) · Andrew Abdelmalak (55-22771) · Adham Bassem (55-21599) · Ahmed Mansour (55-0253)
+**MCTR 908 — Electric Drives · German University in Cairo · 2025/2026**  
+**Group 13** | Ahmed Mostafa (55-1591) · [@andrew-abdelmalak](https://github.com/andrew-abdelmalak) (55-22771) · Adham Bassem (55-21599) · Ahmed Mansour (55-0253)
 
 Cascaded PI-Hysteresis-TSF drive for a three-phase 6/4 switched reluctance motor, implemented in MATLAB/Simulink R2025b and independently validated in Python.
+
+![TC1 Baseline: speed step to 100 rad/s, three-phase currents, and electromagnetic torque](results/fig_tc1.png)
 
 ---
 
@@ -160,10 +162,18 @@ To switch test cases, edit `TL` and `w_ref` at the top of `SRM_params.m` (or use
 
 ```bash
 pip install numpy matplotlib
+
+# Run TC1 (baseline) with cross-validation metrics:
 python validation/srm_validation.py
+
+# Run a specific test case:
+python validation/srm_validation.py --tc 2
+
+# Generate figures for all 5 test cases:
+python validation/srm_validation.py --all
 ```
 
-Runs TC1 (forward-Euler, Ts=10 µs) and prints key metrics. Saves `results/fig_tc1.pdf` and `results/fig_tc1.png`.
+Saves `results/fig_tcN.pdf` and `results/fig_tcN.png` for each test case.
 
 ### Paper (Overleaf)
 
@@ -207,3 +217,9 @@ $$i_k^* = \sqrt{\frac{2\,T_k^*}{dL_k/d\theta}}$$
 - Soft-start logic to suppress startup torque transient (~5 N·m peak)
 - 2-D FEA-derived saturation LUT replacing the linear inductance model
 - Sensorless position estimation replacing the encoder feedback
+
+---
+
+## License
+
+This project was submitted for academic evaluation at the German University in Cairo (MCTR 908 Electric Drives, Spring 2026). All rights reserved by the authors. Not licensed for redistribution or commercial use.
