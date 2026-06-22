@@ -18,6 +18,7 @@ Default: TC1 Baseline — ω* = 100 rad/s, TL = 1.5 N·m step at t = 0.1 s.
 Usage:
     pip install numpy matplotlib
     python srm_validation.py [--tc {1,2,3,4,5}]
+    python srm_validation.py --all
 
 Cross-validation metrics printed at the end; figures saved to ../results/.
 """
@@ -328,11 +329,28 @@ def plot(data: dict, tc: int, out_dir: Path):
 # ─── Entry point ──────────────────────────────────────────────────────────────
 def main():
     parser = argparse.ArgumentParser(description="SRM validation script — Group 13")
-    parser.add_argument("--tc", type=int, default=1, choices=[1, 2, 3, 4, 5],
-                        help="Test case to run (default: 1)")
+    parser.add_argument("--tc", type=int, default=None, choices=[1, 2, 3, 4, 5],
+                        help="Test case to run (default: 1, or use --all)")
+    parser.add_argument("--all", action="store_true",
+                        help="Run all 5 test cases and save all figures")
     args = parser.parse_args()
 
-    tc  = args.tc
+    results_dir = Path(__file__).parent.parent / "results"
+
+    if args.all:
+        print("\nRunning all 5 test cases...")
+        for tc_num in range(1, 6):
+            cfg = TEST_CASES[tc_num]
+            print(f"\n{'='*60}")
+            print(f"  SRM Validation — {cfg['label']}")
+            print(f"{'='*60}")
+            data = run(tc_num)
+            compute_metrics(data, cfg["w_ref"])
+            plot(data, tc_num, results_dir)
+        print("\nAll figures saved to results/")
+        return
+
+    tc  = args.tc if args.tc is not None else 1
     cfg = TEST_CASES[tc]
 
     print(f"\n{'='*60}")
@@ -368,8 +386,7 @@ def main():
             print(f"    {name:<16} Δ = {delta:6.2f} {unit:<3}  tol ≤ {tol} {unit}  [{status}]")
         print(f"\n  Overall: {'ALL PASS ✓' if all_pass else 'SOME FAIL ✗'}")
 
-    # Save figure relative to this script's location
-    results_dir = Path(__file__).parent.parent / "results"
+    # Save figure relative to this script's location (defined at top of main)
     plot(data, tc, results_dir)
 
 
