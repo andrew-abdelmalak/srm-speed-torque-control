@@ -37,6 +37,8 @@ Cascaded PI-Hysteresis-TSF drive for a three-phase 6/4 switched reluctance motor
 │   └── Final_Presentation.pptx
 ├── .gitignore
 ├── CHANGELOG.md
+├── LICENSE                MIT License
+├── requirements.txt       Python dependencies (numpy, matplotlib)
 └── README.md
 ```
 
@@ -161,7 +163,7 @@ To switch test cases, edit `TL` and `w_ref` at the top of `SRM_params.m` (or use
 ### Python Validation
 
 ```bash
-pip install numpy matplotlib
+pip install -r requirements.txt
 
 # Run TC1 (baseline) with cross-validation metrics:
 python validation/srm_validation.py
@@ -222,4 +224,6 @@ $$i_k^* = \sqrt{\frac{2\,T_k^*}{dL_k/d\theta}}$$
 
 ## License
 
-This project was submitted for academic evaluation at the German University in Cairo (MCTR 908 Electric Drives, Spring 2026). All rights reserved by the authors. Not licensed for redistribution or commercial use.
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+
+© 2026 Ahmed Mostafa, Andrew Abdelmalak, Adham Bassem, Ahmed Mansour. Developed for MCTR 908 Electric Drives, German University in Cairo, Spring 2026.

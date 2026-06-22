@@ -7,6 +7,7 @@
 \usepackage{multirow}
 \usepackage{url}
 \usepackage{graphicx}
+\usepackage{hyperref}
 \usepackage{tikz}
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
@@ -68,9 +69,8 @@ high-confidence reproducibility of the simulation results.
 \end{abstract}
 
 \begin{IEEEkeywords}
-switched reluctance motor, electric drives, torque ripple minimisation, torque
-sharing function, hysteresis current control, PI speed control,
-MATLAB/Simulink, independent validation
+switched reluctance motor, torque sharing function, hysteresis
+current control, MATLAB/Simulink, independent validation
 \end{IEEEkeywords}
 %% ============================================================
 
@@ -376,13 +376,12 @@ Fig.~\ref{fig:blockdiagram} shows the complete cascaded architecture.
 %% ---- FIGURE 2: Block Diagram (two columns wide) ----
 \begin{figure*}[t]
 \centering
-\scalebox{0.77}{%
 \begin{tikzpicture}[
   block/.style={rectangle, draw, rounded corners=3pt,
-    fill=blue!7, minimum height=2.1em, text width=2.1cm,
+    fill=blue!7, minimum height=2.1em, text width=1.6cm,
     text centered, align=center, font=\small},
   plant/.style={rectangle, draw, rounded corners=3pt,
-    fill=orange!15, minimum height=2.1em, text width=2.1cm,
+    fill=orange!15, minimum height=2.1em, text width=1.6cm,
     text centered, align=center, font=\small},
   sumnode/.style={circle, draw, semithick, inner sep=0pt,
     minimum size=1.6em, font=\normalsize},
@@ -391,15 +390,15 @@ Fig.~\ref{fig:blockdiagram} shows the complete cascaded architecture.
 ]
 %% Forward-path nodes
 \node[sumnode] (sum)  {$\Sigma$};
-\node[block, right=0.7cm of sum]   (pi)   {PI Speed\\Controller};
-\node[block, right=0.85cm of pi]   (tsf)  {Torque Sharing\\Function (TSF)};
-\node[block, right=0.85cm of tsf]  (t2i)  {T2I\\Inversion};
-\node[block, right=0.85cm of t2i]  (hyst) {Hysteresis\\Controller};
-\node[block, right=0.85cm of hyst] (ahb)  {AHB\\Converter};
-\node[plant, right=0.85cm of ahb]  (srm)  {SRM\\Plant};
+\node[block, right=0.5cm of sum]   (pi)   {PI Speed\\Controller};
+\node[block, right=0.6cm of pi]   (tsf)  {Torque Sharing\\Function (TSF)};
+\node[block, right=0.6cm of tsf]  (t2i)  {T2I\\Inversion};
+\node[block, right=0.6cm of t2i]  (hyst) {Hysteresis\\Controller};
+\node[block, right=0.6cm of hyst] (ahb)  {AHB\\Converter};
+\node[plant, right=0.6cm of ahb]  (srm)  {SRM\\Plant};
 
 %% Speed-reference input
-\draw[arr] ($(sum.west)+(-1.2cm,0)$) --
+\draw[arr] ($(sum.west)+(-0.9cm,0)$) --
            node[lbl, above]{$\omega^*$} (sum.west);
 
 %% Forward-path wires
@@ -430,7 +429,7 @@ Fig.~\ref{fig:blockdiagram} shows the complete cascaded architecture.
 \draw[-Stealth, gray, thin] (tapFB2) -- (t2i.south);
 \node[lbl, gray, below=2pt] at ($(t2i.south)+(0,-0.5cm)$){$\theta$};
 
-\end{tikzpicture}}% end scalebox
+\end{tikzpicture}
 \caption{Complete cascaded control architecture. Outer PI speed loop
   $\to$ cubic TSF distributes $T^*$ among phases as $T_k^*$ $\to$ T2I
   inversion yields current references $i_k^*$ $\to$ inner hysteresis
@@ -561,7 +560,7 @@ the cubic TSF.
 \end{figure}
 
 \subsection{TC2 --- High-Speed (200\,rad/s)}
-Doubling the speed reference to 200\,rad/s increases back-EMF
+Fig.~\ref{fig:tc2} shows the TC2 transient. Doubling the speed reference to 200\,rad/s increases back-EMF
 proportionally, yet the hysteresis controller maintains current tracking
 without generating negative torque pulses. The motor settles in
 approximately 100\,ms with zero steady-state error, confirming that
@@ -569,13 +568,34 @@ $\theta_{\mathrm{off}}=38^{\circ}$ remains within the motoring region at
 elevated speeds and that the 300\,V DC-link is sufficient to sustain
 hysteresis current control throughout.
 
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{fig_tc2}
+\caption{TC2 High-Speed ($\omega^*=200$\,rad/s, $T_L=1.5$\,N\,m).
+  (a)~Speed tracking: zero steady-state error at 200\,rad/s.
+  (b)~Three-phase currents: back-EMF ``current tails'' visible during
+  commutation demagnetisation.
+  (c)~Torque: no negative torque pulses at steady state.}
+\label{fig:tc2}
+\end{figure}
+
 \subsection{TC3 --- High-Load (100\,rad/s, 5.0\,N\,m Step)}
-A 5.0\,N\,m step load equal to the anti-windup saturation limit $T_{\max}$
+Fig.~\ref{fig:tc3} shows the TC3 transient. A 5.0\,N\,m step load equal to the anti-windup saturation limit $T_{\max}$
 is applied at $t=0.1$\,s. The speed dip is negligible. Phase currents
 stabilise at approximately 6\,A, well below the 15\,A clamp, demonstrating
 that the cubic TSF distributes the additional torque demand efficiently
 across phases without saturating any individual phase. Synchronisation is
 maintained throughout.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{fig_tc3}
+\caption{TC3 High-Load ($\omega^*=100$\,rad/s, $T_L=5.0$\,N\,m step at
+  $t=0.1$\,s). (a)~Speed tracking: negligible dip under full-saturation
+  load step. (b)~Three-phase currents: ~6\,A steady state, well below
+  15\,A clamp. (c)~Torque: electromagnetic torque balances 5\,N\,m load.}
+\label{fig:tc3}
+\end{figure}
 
 \subsection{TC4 --- Velocity Ramp ($K_p=15$)}
 A linearly increasing speed reference (0 to 100\,rad/s) is tracked with
