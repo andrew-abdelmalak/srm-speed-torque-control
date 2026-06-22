@@ -174,12 +174,10 @@ well-designed 6/4 geometries~\cite{Krishnan2001}.
   label style={font=\small},
   axis line style={semithick},
 ]
-%% Motoring region (green fill)
-\addplot[fill=green!15, draw=none] coordinates
-  {(0,0)(0,20)(38,150)(38,0)} -- cycle;
+%% Motoring region (green fill) — TikZ \fill bypasses pgfplots fill-under-curve behaviour
+\fill[green!15] (axis cs:0,0) -- (axis cs:0,20) -- (axis cs:38,150) -- (axis cs:38,0) -- cycle;
 %% Braking region (red fill)
-\addplot[fill=red!10, draw=none] coordinates
-  {(43,0)(43,150)(81,20)(81,0)} -- cycle;
+\fill[red!10] (axis cs:43,0) -- (axis cs:43,150) -- (axis cs:81,20) -- (axis cs:81,0) -- cycle;
 %% Main piecewise-linear inductance curve
 \addplot[blue, line width=1.4pt] coordinates
   {(0,20)(38,150)(43,150)(81,20)(90,20)};
@@ -378,7 +376,8 @@ Fig.~\ref{fig:blockdiagram} shows the complete cascaded architecture.
 %% ---- FIGURE 2: Block Diagram (two columns wide) ----
 \begin{figure*}[t]
 \centering
-\begin{tikzpicture}[scale=0.77,
+\scalebox{0.77}{%
+\begin{tikzpicture}[
   block/.style={rectangle, draw, rounded corners=3pt,
     fill=blue!7, minimum height=2.1em, text width=2.1cm,
     text centered, align=center, font=\small},
@@ -431,7 +430,7 @@ Fig.~\ref{fig:blockdiagram} shows the complete cascaded architecture.
 \draw[-Stealth, gray, thin] (tapFB2) -- (t2i.south);
 \node[lbl, gray, below=2pt] at ($(t2i.south)+(0,-0.5cm)$){$\theta$};
 
-\end{tikzpicture}
+\end{tikzpicture}}% end scalebox
 \caption{Complete cascaded control architecture. Outer PI speed loop
   $\to$ cubic TSF distributes $T^*$ among phases as $T_k^*$ $\to$ T2I
   inversion yields current references $i_k^*$ $\to$ inner hysteresis
