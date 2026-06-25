@@ -4,14 +4,13 @@
 \usepackage{cite}
 \usepackage{amsmath,amssymb,amsfonts}
 \usepackage{booktabs}
-\usepackage{multirow}
 \usepackage{url}
 \usepackage{graphicx}
-\usepackage{hyperref}
 \usepackage{tikz}
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.18}
-\usetikzlibrary{arrows.meta,positioning,shapes.geometric,calc,fit}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,calc}
+\usepackage{hyperref}
 
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
@@ -61,7 +60,7 @@ nonlinear torque-to-current inversion block, and an inner hysteresis current
 controller driving an asymmetric half-bridge~(AHB) converter. Five test cases
 spanning 100--200\,rad/s speed references, step loads up to~5\,N$\cdot$m, and
 ramp speed/torque profiles demonstrate zero steady-state speed error and robust
-disturbance rejection. An independent MATLAB re-implementation, sharing no code
+disturbance rejection. An independent Python re-implementation, sharing no code
 with the Simulink model, confirms steady-state speed accuracy to within~0.01\%,
 mean electromagnetic torque to within~0.000\%, and peak phase-current magnitude
 to within~1.8\%. All six cross-validation criteria pass, establishing
@@ -92,6 +91,9 @@ practical converter topologies, current regulation~\cite{Husain1996}, and
 torque-ripple suppression via torque sharing
 functions~\cite{Schramm1992,Xue2009,Zhu2015}. Position estimation without a
 shaft encoder has also been widely studied~\cite{Cheok2000}.
+Despite the breadth of prior work, comprehensive open implementations linking
+cubic TSF selection, multi-operating-point simulation, and independent
+cross-implementation validation remain scarce in the published literature.
 
 This paper presents the complete MATLAB/Simulink realisation of a cascaded
 PI-hysteresis-TSF drive for a three-phase 6/4~SRM and validates the results
@@ -105,9 +107,18 @@ The main contributions are:
       formulations~\cite{Schramm1992,Xue2009}.
 \item Closed-loop speed regulation across five test cases spanning a 2:1
       speed range and a 3:1 load range.
-\item Independent cross-validation by a separately-coded MATLAB script
+\item Independent cross-validation by a separately-coded Python script
       confirming sub-percent agreement on all steady-state metrics.
 \end{enumerate}
+The remainder of this paper is structured as follows.
+Section~II describes the 6/4~SRM construction and inductance profile.
+Sections~III--VI cover the dynamic model, converter topology, current control
+strategies, and torque sharing functions, respectively.
+Section~VII presents the cascaded speed control architecture.
+Section~VIII details the MATLAB/Simulink implementation.
+Section~IX presents simulation results for five operating test cases.
+Section~X reports the independent Python validation.
+Section~XI discusses the results, and Section~XII concludes.
 
 %% ------------------------------------------------------------
 \section{SRM Construction and Inductance Profile}
@@ -517,6 +528,9 @@ Table~\ref{tab:testcases} defines the reference conditions. In TC4 the
 speed PI gains were re-tuned to $K_p=15$, $K_i=10$ to achieve adequate
 ramp-tracking bandwidth; all other TCs use the nominal gains in
 Table~\ref{tab:params}.
+\emph{Note:} all figures in this section were produced by the independent
+Python re-implementation described in Section~X; the Simulink model yields
+results within the tolerances documented in Table~\ref{tab:validation}.
 
 \begin{table}[htbp]
 \caption{Simulation Test Cases}
@@ -535,10 +549,10 @@ TC & $\omega^*$ (rad/s) & $T_L$ (N\,m) & Description \\
 \end{tabular}
 \end{table}
 
-\subsection{TC1 --- Baseline (100\,rad/s, 1.5\,N\,m Step)}
+\subsection{TC1: Baseline (100\,rad/s, 1.5\,N\,m Step)}
 Fig.~\ref{fig:tc1} shows the TC1 transient. The rotor accelerates from rest
 and reaches the 100\,rad/s reference with a critically-damped response in
-approximately 30\,ms. The anti-windup integrator clamps the PI output at
+approximately 36\,ms. The anti-windup integrator clamps the PI output at
 $T_{\max}=5$\,N\,m throughout the startup transient; the electromagnetic
 torque is therefore bounded at 5\,N\,m before settling to the load
 equilibrium of 1.601\,N\,m. After the 1.5\,N\,m
@@ -552,14 +566,14 @@ the cubic TSF.
 \includegraphics[width=\columnwidth]{fig_tc1}
 \caption{TC1 Baseline ($\omega^*=100$\,rad/s, $T_L=1.5$\,N\,m step at
   $t=0.1$\,s). (a)~Speed tracking: reference dashed, response solid;
-  zero steady-state error, rise time $\approx29$\,ms.
+  zero steady-state error, rise time $\approx36$\,ms.
   (b)~Three-phase currents: smooth cubic-TSF transitions at commutation.
   (c)~Electromagnetic torque $T_e$ (purple) and load torque $T_L$ (dashed);
-  mean steady-state $T_e=1.601$\,N\,m, peak phase current $\hat{i}=7.21$\,A.}
+  mean steady-state $T_e=1.601$\,N\,m, peak phase current $\hat{i}=7.09$\,A.}
 \label{fig:tc1}
 \end{figure}
 
-\subsection{TC2 --- High-Speed (200\,rad/s)}
+\subsection{TC2: High-Speed (200\,rad/s)}
 Fig.~\ref{fig:tc2} shows the TC2 transient. Doubling the speed reference to 200\,rad/s increases back-EMF
 proportionally, yet the hysteresis controller maintains current tracking
 without generating negative torque pulses. The motor settles in
@@ -579,7 +593,7 @@ hysteresis current control throughout.
 \label{fig:tc2}
 \end{figure}
 
-\subsection{TC3 --- High-Load (100\,rad/s, 5.0\,N\,m Step)}
+\subsection{TC3: High-Load (100\,rad/s, 5.0\,N\,m Step)}
 Fig.~\ref{fig:tc3} shows the TC3 transient. A 5.0\,N\,m step load equal to the anti-windup saturation limit $T_{\max}$
 is applied at $t=0.1$\,s. The speed dip is negligible. Phase currents
 stabilise at approximately 6\,A, well below the 15\,A clamp, demonstrating
@@ -597,22 +611,43 @@ maintained throughout.
 \label{fig:tc3}
 \end{figure}
 
-\subsection{TC4 --- Velocity Ramp ($K_p=15$)}
-A linearly increasing speed reference (0 to 100\,rad/s) is tracked with
+\subsection{TC4: Velocity Ramp ($K_p=15$)}
+Fig.~\ref{fig:tc4} shows the TC4 transient. A linearly increasing speed reference (0 to 100\,rad/s) is tracked with
 re-tuned gains $K_p=15$, $K_i=10$ to widen the speed-loop bandwidth for
 ramp following. The PI output tracks the ramp slope without steady-state
 lag, validating the controller's ramp-following capability.
 
-\subsection{TC5 --- Torque Ramp}
-With speed held at 100\,rad/s, the load torque ramps from zero to $T_{\max}$.
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{fig_tc4}
+\caption{TC4 Velocity Ramp ($\omega^*$: 0\,to\,100\,rad/s, $T_L=1.5$\,N\,m,
+  $K_p=15$). (a)~Speed tracking: ramp reference followed with zero
+  steady-state lag. (b)~Three-phase currents: smooth rise during
+  acceleration. (c)~Torque: $T_e$ tracks the ramp demand.}
+\label{fig:tc4}
+\end{figure}
+
+\subsection{TC5: Torque Ramp}
+Fig.~\ref{fig:tc5} shows the TC5 transient. With speed held at 100\,rad/s, the load torque ramps from zero to $T_{\max}$.
 Phase currents grow monotonically from approximately 1\,A to 8.5\,A,
 validating the T2I inversion and hysteresis current-loop bandwidth across
 the full torque range.
 
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{fig_tc5}
+\caption{TC5 Torque Ramp ($\omega^*=100$\,rad/s, $T_L$: 0\,to\,5\,N\,m ramp).
+  (a)~Speed: constant 100\,rad/s maintained throughout disturbance.
+  (b)~Three-phase currents: monotonic growth from $\approx$1\,A to
+  $\approx$8.5\,A as load increases. (c)~$T_e$ tracks rising $T_L$.}
+\label{fig:tc5}
+\end{figure}
+
 %% ------------------------------------------------------------
 \section{Independent Validation}
 %% ------------------------------------------------------------
-To verify the Simulink model, a standalone MATLAB script was written that
+To verify the Simulink model, a standalone Python script
+(\texttt{validation/srm\_validation.py}) was written that
 reimplements the SRM dynamics, the piecewise-linear inductance LUT, the
 cubic TSF, the T2I inversion, and the hysteresis switching logic from
 scratch, with no shared code or data structures from the Simulink model.
@@ -627,15 +662,16 @@ Simulink model uses fourth-order RK4 while the validation script uses
 first-order Euler, both at the same timestep. Quantities insensitive to
 integration order---steady-state speed, mean torque, and peak
 current---agree to within 1.8\% or better, providing high-confidence
-confirmation that the Simulink control logic is correctly specified.
+confirmation that the Simulink control logic is correctly specified
+by the Python re-implementation.
 
 \begin{table}[htbp]
-\caption{TC1 Cross-Validation: Simulink vs.\ Independent MATLAB}
+\caption{TC1 Cross-Validation: Simulink vs.\ Independent Python}
 \label{tab:validation}
 \centering
 \begin{tabular}{@{}lccr@{}}
 \toprule
-Metric & Simulink & MATLAB & $\Delta$ \\
+Metric & Simulink & Python & $\Delta$ \\
 \midrule
 Steady-state speed (rad/s)    & 99.94  & 99.95  & 0.01\%          \\
 Rise time 10--90\% (ms)       & 29.4   & 36.1   & 6.7\,ms         \\
@@ -693,6 +729,12 @@ six validation criteria passing. These results establish the
 PI-hysteresis-TSF architecture as a verified and reproducible baseline for
 subsequent real-time SRM drive implementation, with speed-dependent angle
 advancing and soft-start logic as primary directions for future work.
+
+\section*{Acknowledgment}
+The authors thank Dr.~Walid Atef Omran (Associate Professor, Dept.\ of
+Mechatronics Engineering, German University in Cairo) for project
+guidance throughout the course. This work was completed for MCTR~908
+Electric Drives, German University in Cairo, Spring 2026.
 
 \bibliographystyle{IEEEtran}
 \bibliography{references}
