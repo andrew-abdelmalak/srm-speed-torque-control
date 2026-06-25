@@ -22,19 +22,26 @@ Cascaded PI-Hysteresis-TSF drive for a three-phase 6/4 switched reluctance motor
 ├── validation/
 │   └── srm_validation.py   Independent Python re-implementation (NumPy, forward-Euler)
 ├── results/
-│   ├── fig_tc1.pdf         TC1 baseline simulation figure
-│   └── fig_tc1.png
+│   ├── fig_tc1.pdf/.png    TC1 Baseline (100 rad/s, 1.5 N·m step)
+│   ├── fig_tc2.pdf/.png    TC2 High-Speed (200 rad/s)
+│   ├── fig_tc3.pdf/.png    TC3 High-Load (5.0 N·m step)
+│   ├── fig_tc4.pdf/.png    TC4 Velocity Ramp
+│   └── fig_tc5.pdf/.png    TC5 Torque Ramp
 ├── paper/
 │   ├── main.tex            IEEE conference paper (IEEEtran, compile on Overleaf)
 │   ├── references.bib      9 BibTeX entries
 │   ├── IEEEtran.cls        IEEEtran class file
-│   └── fig_tc1.pdf         Figure included in paper
+│   ├── fig_tc1.pdf         TC1 figure (identical to results/)
+│   ├── fig_tc2.pdf         TC2 figure
+│   ├── fig_tc3.pdf         TC3 figure
+│   ├── fig_tc4.pdf         TC4 figure
+│   └── fig_tc5.pdf         TC5 figure
 ├── docs/
-│   ├── MS3_Theoretical_Background.pdf
-│   ├── MS4_Submission.pdf
-│   ├── Validation_Report.pdf
-│   ├── Final_Report.pdf
-│   └── Final_Presentation.pptx
+│   ├── MS3_Theoretical_Background.pdf    Milestone 3 (theoretical background report)
+│   ├── MS4_Submission.pdf               Milestone 4 (model layout report)
+│   ├── Final_Report.pdf                 Milestone 5 (final simulation report)
+│   ├── Validation_Report.pdf            Independent validation report
+│   └── Final_Presentation.pptx          Final in-class presentation
 ├── .gitignore
 ├── CHANGELOG.md
 ├── LICENSE                MIT License
@@ -179,7 +186,9 @@ Saves `results/fig_tcN.pdf` and `results/fig_tcN.png` for each test case.
 
 ### Paper (Overleaf)
 
-Upload the contents of `paper/` to your Overleaf project and compile `main.tex`. The paper uses the `IEEEtran` conference class and requires `fig_tc1.pdf` to be present.
+Upload the entire contents of `paper/` to your Overleaf project and compile `main.tex`.
+The paper uses the `IEEEtran` conference class and requires all five figure PDFs
+(`fig_tc1.pdf` through `fig_tc5.pdf`) to be present in the Overleaf file list.
 
 ---
 
