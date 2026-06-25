@@ -6,6 +6,63 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.1.0] — 2026-06-23
+
+### Fixed
+- `paper/main.tex`: Corrected Section X from “standalone MATLAB script” to
+  “standalone Python script (validation/srm\_validation.py)”
+- `paper/main.tex`: All result figures (Fig. 3–5) now correctly attributed to
+  the independent Python re-implementation; captions updated to Python-measured
+  values (peak current 7.09 A, rise time 36 ms)
+- `paper/main.tex`: Moved `\usepackage{hyperref}` to after pgfplots (required
+  load order)
+- `paper/main.tex`: Removed unused `\usepackage{multirow}` and
+  `\usetikzlibrary{fit}`
+- `paper/references.bib`: All IEEE journal names abbreviated to IEEE standard
+  (e.g., `IEEE Trans. Power Electron.`)
+- `paper/fig_tc1.pdf`: Replaced with the version from `results/` (was a
+  stale older render; now identical to the canonical result)
+- `results/fig_tc1.pdf`: Regenerated — now matches `paper/fig_tc1.pdf`
+- `.gitignore`: Removed stale `!src/*.mat` exception
+- `README.md`: Updated `results/` and `paper/` file trees to reflect all five
+  TC figures; corrected Overleaf usage instructions
+
+### Added
+- `paper/main.tex`: Paper organisation paragraph at end of Introduction
+- `paper/main.tex`: Gap statement in Introduction before contribution list
+- `paper/main.tex`: `\section*{Acknowledgment}` thanking Dr. Walid Omran
+  and MCTR 908, GUC, Spring 2026
+- `paper/main.tex`: `\includegraphics` for TC4 (Fig. 6) and TC5 (Fig. 7)
+  with captions; paper now has **7 figures** total (2 TikZ + 5 photos)
+- `paper/fig_tc4.pdf`, `paper/fig_tc5.pdf`: copies from `results/`
+- `results/fig_tc4.pdf/.png`, `results/fig_tc5.pdf/.png`: TC4 and TC5
+  simulation figures
+- `CONTRIBUTING.md`: Contribution guide for the four-person team
+- `matlab-code` branch deleted: was an unmerged development branch by
+  Ahmed Mostafa containing an intermediate `SRM_Project.slx` (272 KB);
+  the final version in `main/src/` (244 KB) is the authoritative submission.
+  Deletion recorded here for provenance.
+
+### Changed
+- `paper/main.tex`: Subsection headings changed from `TC1 --- Baseline`
+  style to `TC1: Baseline` (colon, more conventional in IEEE papers)
+- `paper/main.tex`: TC4 and TC5 subsections now open with
+  `Fig.~\ref{...} shows the TC\,N transient.` for consistency
+- `paper/main.tex`: Table V caption: “Independent MATLAB” → “Independent
+  Python”
+- `paper/main.tex`: Index terms trimmed from 8 to 5 per IEEE standard
+  (prior release already applied; confirmed here)
+- README docs/ section: explicit milestone mapping added
+- README `paper/` and `results/` trees updated to show all five TC figures
+
+### Note on commit history
+The ten binary-figure commits (`c85cff1b`–`152c0ca5`) added in the
+previous release were pushed individually rather than as a single atomic
+commit due to tool constraints. They are logically one change and should
+be read as such.
+
+---
+
 ## [1.0.0] — 2026-06-22
 
 ### Added
