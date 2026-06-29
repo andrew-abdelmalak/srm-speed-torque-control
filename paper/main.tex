@@ -53,7 +53,9 @@ Student ID: 55-0253}
 \begin{abstract}
 This paper presents the complete design, MATLAB/Simulink implementation, and
 independent validation of a cascaded speed and torque control system for a
-three-phase 6/4 switched reluctance motor~(SRM). The architecture consists of
+three-phase 6/4 switched reluctance motor~(SRM), a doubly-salient,
+magnet-free machine with six stator poles and four rotor poles, producing
+torque through position-dependent inductance variation. The architecture consists of
 an outer proportional-integral~(PI) speed loop, a cubic torque sharing
 function~(TSF) that enforces zero boundary slopes during phase commutation, a
 nonlinear torque-to-current inversion block, and an inner hysteresis current
@@ -215,12 +217,12 @@ Green: motoring region ($dL/d\theta>0$); red: braking region ($dL/d\theta<0$).}
 %% ------------------------------------------------------------
 \subsection{Electrical and Magnetic Relations}
 Assuming no mutual coupling between phases, the voltage equation for phase
-$k$ is
+$k$ as shown in~\eqref{eq:volt_basic} is
 \begin{equation}
 v_k = R_s\,i_k + \frac{d\psi_k}{dt}.
 \label{eq:volt_basic}
 \end{equation}
-Expanding the flux-linkage derivative using the chain rule:
+Expanding~\eqref{eq:volt_basic} using the chain rule yields~\eqref{eq:phase_voltage}:
 \begin{equation}
 v_k = R_s\,i_k + L(\theta,i_k)\frac{di_k}{dt}
       + i_k\frac{\partial L}{\partial\theta}\,\omega,
@@ -323,7 +325,8 @@ noise.
 
 \subsection{TSF Formulations}
 A Torque Sharing Function distributes the total reference $T^*$ among
-overlapping phases so that their sum is constant throughout commutation:
+overlapping phases so that their sum is constant throughout commutation,
+as expressed in~\eqref{eq:tsf_general}:
 \begin{equation}
 T_k^*(\theta) = \bigl(1-f_r(\theta)\bigr)T^*,\quad
 T_{k+1}^*(\theta) = f_r(\theta)\,T^*,
@@ -360,7 +363,8 @@ loop.
 %% ------------------------------------------------------------
 \section{Cascaded Speed Control Architecture}
 %% ------------------------------------------------------------
-A standard outer-loop PI controller generates the total torque demand:
+A standard outer-loop PI controller generates the total torque demand
+given by~\eqref{eq:pi}:
 \begin{equation}
 T^*(s)=K_p\,e_\omega(s)+\frac{K_i}{s}\,e_\omega(s),
 \label{eq:pi}
@@ -510,7 +514,7 @@ Simulation timestep   & $T_s$                   & 10     & $\mu$s               
 The cubic sharing function is embedded as a MATLAB Function block. For
 phase $k$ with mechanical offset $\phi_k=(k-1)\tau/3$, the normalised
 overlap position is $x=(\theta-\phi_k-\theta_{\mathrm{on}})/\theta_{\mathrm{ov}}$,
-and:
+and the sharing function is defined in~\eqref{eq:tsf}:
 \begin{equation}
 f_r(x) = 3x^2 - 2x^3, \qquad x\in[0,1].
 \label{eq:tsf}
