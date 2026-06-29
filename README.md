@@ -44,6 +44,7 @@ Cascaded PI-Hysteresis-TSF drive for a three-phase 6/4 switched reluctance motor
 │   └── Final_Presentation.pptx          Final in-class presentation
 ├── .gitignore
 ├── CHANGELOG.md
+├── CONTRIBUTING.md       Team contribution guide
 ├── LICENSE                MIT License
 ├── requirements.txt       Python dependencies (numpy, matplotlib)
 └── README.md
