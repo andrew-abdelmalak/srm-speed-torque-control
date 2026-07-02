@@ -2,335 +2,138 @@
 
 [![MIT License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue)
-![MATLAB R2025b](https://img.shields.io/badge/MATLAB-R2025b-orange)
+![MATLAB%2FSimulink](https://img.shields.io/badge/MATLAB%2FSimulink-Model--Based-orange)
+[![Paper PDF](https://img.shields.io/badge/Paper-PDF-red)](docs/SRM_Speed_Torque_Control_Paper.pdf)
 
-**MCTR 908 — Electric Drives · German University in Cairo · Spring 2026**  
-**Group 13** | Ahmed Mostafa (55-1591) · [@andrew-abdelmalak](https://github.com/andrew-abdelmalak) (55-22771) · Adham Bassem (55-21599) · Ahmed Mansour (55-0253)
+**MCTR 908 - Electric Drives, German University in Cairo, Spring 2026**  
+**Group 13**: Ahmed Mostafa (55-1591), [Andrew Abdelmalak](https://github.com/andrew-abdelmalak) (55-22771), Adham Bassem (55-21599), Ahmed Mansour (55-0253)
 
-> **Paper:** IEEE conference paper — [`paper/main.tex`](paper/main.tex) (compile on Overleaf with IEEEtran).
+**Read first:** [Final paper PDF](docs/SRM_Speed_Torque_Control_Paper.pdf) | [LaTeX source](paper/main.tex) | [Python validation mirror](validation/srm_validation.py)
 
-Cascaded PI-hysteresis-cubic-TSF drive for a three-phase 6/4 switched reluctance motor, implemented in MATLAB/Simulink R2025b and independently validated from scratch in Python. Zero steady-state speed error, <0.01% cross-validation agreement on steady-state metrics.
+This repository is the final, traceable version of our switched reluctance motor project.
+It documents a full cascaded PI-TSF-T2I-hysteresis drive for a three-phase 6/4 SRM, explains why the cubic torque sharing function matters physically, shows how the controller behaves across the operating envelope, and checks reproducibility with an independent Python re-implementation.
 
 <p align="center">
-  <img src="results/fig_tc1.png" width="550" alt="TC1 Baseline result">
+  <img src="paper/fig_operating_envelope.png" width="900" alt="Operating envelope summary for TC2 to TC5">
 </p>
-<p align="center"><em>TC1 Baseline: speed step to 100 rad/s (top), three-phase currents with cubic TSF commutation (middle), electromagnetic torque with anti-windup clamp at 5 N·m (bottom).</em></p>
+<p align="center"><em>Operating-envelope summary: high-speed tracking, maximum-load boundary behavior, ramp tracking, and torque adaptation are shown as four different questions instead of four near-duplicate waveform dumps.</em></p>
 
----
+## What Was Built
 
-## Table of Contents
+- Outer-loop PI speed controller with torque clamp anti-windup.
+- Cubic torque sharing function that distributes total torque demand across the three phases.
+- Nonlinear torque-to-current inversion for per-phase current references.
+- Hysteresis current controller driving an asymmetric half-bridge converter.
+- MATLAB/Simulink plant model for the 6/4 SRM and an independent Python mirror for reproducibility checks.
 
-[Overview](#overview) · [System Architecture](#system-architecture) · [Parameters](#parameters) · [Inductance Profile](#inductance-profile) · [Cubic TSF](#cubic-tsf) · [Test Cases](#test-cases) · [Key Results (Interpreted)](#key-results-interpreted) · [Validation](#validation) · [Repository Structure](#repository-structure) · [Usage](#usage) · [Key Equations](#key-equations) · [Authors](#authors) · [Acknowledgments](#acknowledgments) · [License](#license)
+## Why The Cubic TSF Matters
 
----
+The key control choice in this project is the cubic torque sharing function
 
-## Overview
-
-Switched reluctance motors (SRMs) offer a magnet-free, fault-tolerant alternative to permanent-magnet synchronous and induction machines, but their doubly-salient construction produces inherently pulsed torque that requires sophisticated electronic control. This project implements and validates a complete cascaded control architecture for a three-phase 6/4 SRM:
-
-- **Outer loop:** PI speed controller with anti-windup clamping
-- **Torque distribution:** Cubic torque sharing function (TSF) with zero boundary slopes
-- **Current reference:** Nonlinear torque-to-current (T2I) inversion
-- **Inner loop:** Hysteresis (bang-bang) current controller
-- **Power stage:** Asymmetric half-bridge (AHB) converter
-
-Five test cases evaluate the drive across a 2:1 speed range (100–200 rad/s) and 3:1 load range (0–5 N·m). An independent Python re-implementation—sharing no code with the Simulink model—confirms steady-state speed to 0.01% and mean torque to 0.000% accuracy. All six cross-validation criteria pass.
-
----
-
-## System Architecture
-
-```
-ω* ──→ [Σ] ──→ [PI Speed Controller] ──→ T* ──→ [Cubic TSF] ──→ Tₖ* ──→ [T2I]
-                    ↑                                                                  ↓
-                    │                                                            iₖ*
-                    │                                                        ↓
-                    │                                              [Hysteresis Controller]
-                    │                                                        ↓
-                    │                                                       vₖ
-                    │                                                        ↓
-                    │                                                    [AHB Converter]
-                    │                                                        ↓
-                    │                                                    [SRM Plant]
-                    └──────────────── ω, θ, iₖ (feedback) ←───────────────┘
-                                                          ↗
-                                                        θ (angle to TSF & T2I)
+```text
+f(x) = 3x^2 - 2x^3
 ```
 
----
+Its value is physical, not cosmetic.
+Unlike a linear sharing law, the cubic TSF has zero slope at both commutation boundaries, so the incoming phase current starts from zero slope and the outgoing phase current decays to zero slope.
+That removes the reference step the hysteresis controller would otherwise have to chase at phase handover, which is why the current and torque transitions look smooth instead of kicked.
 
-## Parameters
+## Key Findings
 
-| Parameter | Symbol | Value | Unit |
-|-----------|--------|-------|------|
-| Phase resistance | Rₛ | 1.0 | Ω |
-| Minimum inductance (unaligned) | L_min | 20 | mH |
-| Maximum inductance (aligned) | L_max | 150 | mH |
-| Stator poles | Nₛ | 6 | — |
-| Rotor poles | Nᵣ | 4 | — |
-| Rotor inertia | J | 0.002 | kg·m² |
-| Viscous damping | B | 0.001 | N·m·s/rad |
-| DC-link voltage | V_dc | 300 | V |
-| Turn-on angle | θ_on | 0 | deg |
-| Turn-off angle | θ_off | 38 | deg |
-| TSF overlap angle | θ_ov | 10 | deg |
-| Speed PI proportional gain | K_p | 0.5 | — |
-| Speed PI integral gain | K_i | 10 | s⁻¹ |
-| Torque saturation (anti-windup clamp) | T_max | 5 | N·m |
-| Peak current clamp | I_max | 15 | A |
-| Hysteresis half-band | Δi | 0.1 | A |
-| Solver (Simulink) | — | ode4 (RK4), fixed-step | — |
-| Solver (Python) | — | forward Euler, fixed-step | — |
-| Timestep | Tₛ | 10 | µs |
-| Simulation window | T_sim | 0.5 | s |
+| Claim | Evidence | Why it matters |
+|---|---|---|
+| Full cascaded drive was implemented | MATLAB/Simulink model plus archived reports and current Python mirror are all included in the repo. | The project is more than a set of plots; the full controller stack is present and inspectable. |
+| Baseline case is well regulated | TC1 rerun reaches 100 rad/s in 32.4 ms, settles to 99.998 rad/s, and produces 1.600 N.m mean steady-state torque. | The speed loop rejects the nominal 1.5 N.m load after startup saturation clears. |
+| High-speed operation stays in motoring mode | TC2 settles to 199.999 rad/s and steady torque stays positive, between about 1.37 and 2.11 N.m in the final fifth of the run. | Even with doubled back-EMF, the controller still demagnetizes each phase before the negative inductance region. |
+| The repo shows the saturation boundary honestly | TC3 rises to 5.01 N.m mean torque after the 5 N.m load step, but speed settles near 79.6 rad/s instead of returning to 100 rad/s. | This is the torque-clamp limit becoming visible, not a hidden modeling error. |
+| Ramp tracking is strong when the outer loop is retuned | TC4 achieves 0.214 rad/s RMSE and 1.25 rad/s maximum absolute error over the 0 to 100 rad/s ramp. | The ramp case needs more proportional authority than the nominal step-tuned controller, and the retuned loop provides it. |
+| T2I scaling works across the load range | In TC5, mean speed stays near 98.995 rad/s while peak phase current grows from about 4.5 A to about 7.2 A as the load ramps from 0 to 5 N.m. | The current demand grows monotonically with torque instead of only behaving well around one operating point. |
+| Independent reproduction is credible | Archived Simulink vs current Python rerun differs by 0.06% in steady-state speed, 0.08% in mean torque, 0.82% in peak current, and 3.0 ms in rise time for TC1. | The remaining gap is consistent with solver order and time-discretization effects, not contradictory physics. |
 
----
+## Representative Baseline Result
 
-## Inductance Profile
+<p align="center">
+  <img src="results/fig_tc1.png" width="620" alt="TC1 baseline speed current and torque result">
+</p>
+<p align="center"><em>TC1 baseline: the top trace shows the speed loop reaching 100 rad/s, the middle trace shows smooth three-phase commutation under cubic TSF sharing, and the bottom trace shows startup torque saturation followed by steady torque balance after the 1.5 N.m load step.</em></p>
 
-Piecewise-linear over one rotor-pole pitch (90° mechanical; 360° electrical for a 4-pole rotor):
+## Reproducibility Check
 
-| Region | Range | L(θ) | dL/dθ | Sign |
-|--------|-------|------|-------|------|
-| Rising (motoring) | 0° – 38° | L_min → L_max | +3.42 H/rad | Positive torque |
-| Aligned (plateau) | 38° – 43° | L_max | 0 | No torque |
-| Falling (braking) | 43° – 81° | L_max → L_min | −3.42 H/rad | Negative torque |
-| Unaligned | 81° – 90° | L_min | 0 | No torque |
+<p align="center">
+  <img src="paper/fig_validation_summary.png" width="820" alt="Validation summary comparing archived Simulink metrics and current Python rerun">
+</p>
+<p align="center"><em>Validation figure: the left panel uses the current Python TC1 rerun, while the right panel compares it against the archived Simulink metrics preserved in <code>docs/Validation_Report.pdf</code>.</em></p>
 
-Built as a 1000-point LUT in `SRM_params.m`; derivative via `gradient()`. The LUT is shared identically between Simulink and Python to eliminate cross-implementation parameter mismatch.
+## Traceability Note
 
----
+Every quantitative claim in this README is anchored to one of two sources already shipped in this course folder:
 
-## Cubic TSF
+- `validation/srm_validation.py` and the regenerated `results/fig_tc*.pdf/.png` figures.
+- `docs/Validation_Report.pdf` for the archived Simulink side of the TC1 back-to-back validation.
 
-The cubic torque sharing function distributes the total torque reference between overlapping phases during commutation:
+This is deliberate.
+The repository does not include exported Simulink time-series arrays, so the final paper uses rerunnable Python waveforms for reproducible plots and the archived Simulink report for the reference metrics.
 
-```
-f(x) = 3x² − 2x³,   x = (θ − θ_on) / θ_ov ∈ [0, 1]
-```
+## Reproduce The Deliverables
 
-**Why cubic over linear:** The linear TSF has f′(0)=f′(1)=1, creating an instantaneous current reference step at commutation boundaries. The cubic TSF has f′(0)=f′(1)=0, eliminating those steps entirely. The incoming phase current rises smoothly from zero and the outgoing phase current falls smoothly to zero, suppressing the torque ripple that linear TSFs produce.
-
-| TSF Type | f′(0) | f′(1) | Edge current spike |
-|----------|-------|-------|-------------------|
-| Linear | 1 | 1 | Large |
-| Sinusoidal | 0 | 0 | None |
-| **Cubic** | **0** | **0** | **None** |
-| Exponential | α | 0 | Tuneable |
-
----
-
-## Test Cases
-
-| TC | ω* (rad/s) | T_L (N·m) | Description |
-|----|-------------|-----------|-------------|
-| 1 | 100 | 1.5 step @ t=0.1 s | Baseline: step speed + step load |
-| 2 | 200 | 1.5 | High-speed: doubled reference |
-| 3 | 100 | 5.0 step @ t=0.1 s | High-load: full saturation limit |
-| 4 | 0→100 ramp | 1.5 | Velocity ramp (K_p=15, K_i=10) |
-| 5 | 100 | 0→T_max ramp | Torque ramp: load increases linearly |
-
-TC4 uses re-tuned gains (K_p=15) for ramp-tracking bandwidth. All other TCs use nominal gains (K_p=0.5, K_i=10).
-
----
-
-## Key Results (Interpreted)
-
-The cubic TSF's zero-slope boundaries eliminate the commutation-edge current spikes that the linear TSF inherently produces. Cross-validation confirms that steady-state quantities (speed, mean torque, peak current) are solver-order-independent, agreeing to within 1.8% or better. Transient quantities (rise time, torque ripple RMS) differ systematically between RK4 (Simulink) and Euler (Python), which is consistent with numerical analysis: RK4 captures the sharp hysteresis switching transients precisely, while first-order Euler smooths them. This 6.7 ms rise-time difference and 0.197 N·m ripple RMS difference reflect solver physics, not implementation error—confirming that both models produce identical underlying dynamics.
-
-**TC1 (Baseline):** Rise time 36.1 ms (Simulink: 29.4 ms), zero steady-state error, mean T_e = 1.601 N·m, peak current 7.09 A (Simulink: 7.21 A).
-
-**TC2 (High-speed):** 200 rad/s tracked without negative torque. Back-EMF "current tails" appear during demagnetisation but produce no braking torque.
-
-**TC3 (High-load):** 5.0 N·m step load (equal to T_max) causes negligible speed dip. Phase currents stabilise at ~6 A, well below I_max = 15 A.
-
-**TC4 (Ramp):** K_p = 15 reduces ramp tracking lag from ~10° to negligible. Δi reduced to 0.05 A to suppress amplified current-reference noise.
-
-**TC5 (Torque ramp):** Current grows monotonically from ~1 A to 8.5 A across the torque range. T2I inversion validated over full operating envelope.
-
----
-
-## Validation
-
-An independent Python script (`validation/srm_validation.py`) re-implements every system component from scratch with zero shared code:
-
-- SRM dynamic ODEs (forward Euler, Tₛ = 10 µs)
-- Piecewise-linear inductance LUT (identical 1000-point data)
-- Cubic TSF and T2I inversion
-- Hysteresis switching with AHB states
-- Mechanical dynamics with identical J, B, T_L
-
-**TC1 Cross-Validation Results:**
-
-| Metric | Simulink (RK4) | Python (Euler) | Δ | Pass? |
-|--------|---------------|----------------|---|-------|
-| Steady-state speed | 99.94 rad/s | 99.95 rad/s | 0.01% | ✓ |
-| Rise time 10–90% | 29.4 ms | 36.1 ms | 6.7 ms (solver order) | ✓ |
-| Mean EM torque (SS) | 1.601 N·m | 1.601 N·m | 0.000% | ✓ |
-| Torque ripple RMS | 0.337 N·m | 0.140 N·m | solver artefact | ✓ |
-| Peak phase current | 7.21 A | 7.09 A | 1.8% | ✓ |
-
-**What each criterion tells us:**
-
-- **0.01% speed agreement:** The PI gains, mechanical parameters, and feedback path are correctly implemented in both environments.
-- **6.7 ms rise time difference:** Expected from RK4 vs. Euler at the same timestep. RK4's higher-order accuracy resolves the initial acceleration transient more faithfully.
-- **0.000% torque agreement:** The TSF + T2I + hysteresis chain produces identical steady-state torque in both solvers.
-- **0.197 N·m ripple difference:** RK4 resolves more high-frequency switching content than Euler. This confirms—not refutes—validity.
-- **1.8% current agreement:** Combined effect of solver order on current-O DE solution and hysteresis switching timing.
-
-All six criteria **PASS**. The validation establishes that both implementations solve the same physical model and produce engineering-equivalent results.
-
----
-
-## Repository Structure
-
-```
-.
-├── src/                                  MATLAB/Simulink source
-│   ├── SRM_params.m                      Parameter definitions & LUT builder
-│   ├── SRM_Project.slx                   Simulink model (ode4, Tₛ=10 µs)
-│   ├── SRM_plots.m                       Post-processing & figure export
-│   ├── SRMcontrol.prj                    MATLAB Project file
-│   └── buildfile.m                       Build script
-├── validation/
-│   └── srm_validation.py                 Independent Python re-implementation
-├── results/
-│   ├── fig_tc1.png / fig_tc1.pdf         TC1 Baseline (100 rad/s, 1.5 N·m step)
-│   ├── fig_tc2.png / fig_tc2.pdf         TC2 High-Speed (200 rad/s)
-│   ├── fig_tc3.png / fig_tc3.pdf         TC3 High-Load (5.0 N·m step)
-│   ├── fig_tc4.png / fig_tc4.pdf         TC4 Velocity Ramp (K_p=15)
-│   └── fig_tc5.png / fig_tc5.pdf         TC5 Torque Ramp
-├── paper/
-│   ├── main.tex                          IEEE conference paper (IEEEtran)
-│   ├── references.bib                    10 BibTeX entries
-│   ├── IEEEtran.cls                      IEEEtran class file
-│   ├── fig_tc1.pdf                       TC1 figure (identical to results/)
-│   ├── fig_tc2.pdf                       TC2 figure
-│   ├── fig_tc3.pdf                       TC3 figure
-│   ├── fig_tc4.pdf                       TC4 figure
-│   └── fig_tc5.pdf                       TC5 figure
-├── docs/
-│   ├── MS3_Theoretical_Background.pdf    Milestone 3 report
-│   ├── MS4_Submission.pdf               Milestone 4 report
-│   ├── Final_Report.pdf                 Milestone 5 final report
-│   ├── Validation_Report.pdf            Independent validation report
-│   └── Final_Presentation.pptx          In-class presentation
-├── .gitignore
-├── CHANGELOG.md                          Version history
-├── CONTRIBUTING.md                       Contribution guidelines
-├── LICENSE                               MIT License
-├── requirements.txt                      Python dependencies
-└── README.md                             This file
-```
-
----
-
-## Usage
-
-### MATLAB/Simulink (Model & Simulation)
+### MATLAB/Simulink
 
 ```matlab
-% 1. Load parameters into workspace:
 run('src/SRM_params.m')
-
-% 2. Open and simulate:
 open('src/SRM_Project.slx')
-out = sim('SRM_Project');   % Tₛ=1e-5, T_sim=0.5
-
-% 3. Generate figures:
+out = sim('SRM_Project')
 run('src/SRM_plots.m')
 ```
 
-To change test cases, edit `TL` and `w_ref` at the top of `SRM_params.m`.
-
-### Python Validation
+### Python mirror
 
 ```bash
-# Install dependencies:
 pip install -r requirements.txt
-
-# Run TC1 (baseline) with cross-validation output:
-python validation/srm_validation.py
-
-# Run a specific test case:
-python validation/srm_validation.py --tc 2
-
-# Run all five test cases:
 python validation/srm_validation.py --all
 ```
 
-Output figures are saved to `results/fig_tcN.pdf` and `results/fig_tcN.png`.
+### Paper PDF
 
-### Paper (Overleaf)
+From `paper/`:
 
-Upload the entire `paper/` directory to Overleaf and compile `main.tex` using the IEEEtran conference class. All five figure PDFs (`fig_tc1.pdf`–`fig_tc5.pdf`) must be present.
+```bash
+pdflatex -interaction=nonstopmode -halt-on-error main.tex
+bibtex main
+pdflatex -interaction=nonstopmode -halt-on-error main.tex
+pdflatex -interaction=nonstopmode -halt-on-error main.tex
+```
 
----
+The compiled PDF is copied to `docs/SRM_Speed_Torque_Control_Paper.pdf`.
 
-## Key Equations
+## Repository Layout
 
-**Flux linkage (linear):**
-$$\psi_k = L(\theta)\,i_k$$
+```text
+.
+|- src/          MATLAB and Simulink source
+|- validation/   Independent Python re-implementation
+|- results/      Regenerated TC1-TC5 result figures
+|- paper/        Final LaTeX paper and derived figure assets
+|- docs/         Archived course reports plus the compiled final paper PDF
+|- README.md
+```
 
-**Phase voltage (chain rule expansion):**
-$$v_k = R_s i_k + L(\theta)\frac{di_k}{dt} + i_k \omega \frac{dL_k}{d\theta}$$
+## Limitations
 
-**Inductance profile (piecewise-linear, 4 regions):**
-$$L(\theta)=\begin{cases}
-L_{\min}+\dfrac{L_{\max}-L_{\min}}{\theta_{\mathrm{off}}}\,\theta, & 0\le\theta<\theta_{\mathrm{off}} \\[8pt]
-L_{\max}, & \theta_{\mathrm{off}}\le\theta<\theta_{\mathrm{a}} \\[4pt]
-L_{\max}-\dfrac{L_{\max}-L_{\min}}{\theta_{\mathrm{u}}-\theta_{\mathrm{a}}}(\theta-\theta_{\mathrm{a}}), & \theta_{\mathrm{a}}\le\theta<\theta_{\mathrm{u}} \\[8pt]
-L_{\min}, & \theta_{\mathrm{u}}\le\theta<\tau
-\end{cases}$$
-
-**Phase torque (co-energy):**
-$$T_{e,k} = \frac{1}{2}\,i_k^2\,\frac{dL_k}{d\theta}$$
-
-**Total electromagnetic torque:**
-$$T_e = \sum_{k=A,B,C} T_{e,k}$$
-
-**Mechanical dynamics:**
-$$J\frac{d\omega}{dt} = T_e - T_L - B\omega$$
-
-**PI speed controller:**
-$$T^*(s) = K_p\,e_\omega(s) + \frac{K_i}{s}\,e_\omega(s)$$
-
-**Torque-to-current inversion:**
-$$i_k^* = \sqrt{\frac{2\,T_k^*}{dL_k/d\theta}}$$
-
-**Cubic TSF:**
-$$f_r(x) = 3x^2 - 2x^3, \quad x = \frac{\theta-\theta_{\mathrm{on}}}{\theta_{\mathrm{ov}}}\in[0,1]$$
-
-**Hysteresis current control:**
-$$v_k = \begin{cases}
-+V_{dc}, & i_k^* - i_k > \Delta i \\
--V_{dc}, & i_k^* - i_k < -\Delta i \\
-0, & \text{otherwise}
-\end{cases}$$
-
----
+- The inductance model is piecewise linear and current independent, so magnetic saturation is not modeled.
+- Turn-on and turn-off angles are fixed rather than scheduled with speed.
+- The Simulink side is archived as a model and reports, not as exported raw traces, so reproducible plotting is done from the Python mirror.
 
 ## Authors
 
-| Name | Student ID | Role |
-|------|-----------|------|
-| Ahmed Mostafa | 55-1591 | Simulink model, parameters, figures |
-| Andrew Abdelmalak | 55-22771 | Python validation, paper, repository |
-| Adham Bassem | 55-21599 | Converter design, test cases |
-| Ahmed Mansour | 55-0253 | TSF analysis, reports, presentation |
+| Name | Role |
+|---|---|
+| Ahmed Mostafa | Simulink model, parameters, original figures |
+| Andrew Abdelmalak | Python validation, paper, repository curation |
+| Adham Bassem | Converter design, test-case definition |
+| Ahmed Mansour | TSF analysis, reports, presentation |
 
-**Supervisor:** Dr. Walid Atef Omran — Associate Professor, Dept. of Mechatronics Engineering, German University in Cairo.
-
----
-
-## Acknowledgments
-
-We thank Dr. Walid Atef Omran for his guidance throughout MCTR 908 Electric Drives (Spring 2026). His lectures on SRM fundamentals, converter topologies, and torque ripple minimisation provided the theoretical foundation for this work.
-
----
+**Supervisor:** Dr. Walid Atef Omran, Associate Professor, Department of Mechatronics Engineering, German University in Cairo.
 
 ## License
 
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
-
-© 2026 Ahmed Mostafa, Andrew Abdelmalak, Adham Bassem, Ahmed Mansour. Developed for MCTR 908 Electric Drives, German University in Cairo, Spring 2026.
+MIT License. See [LICENSE](LICENSE).
