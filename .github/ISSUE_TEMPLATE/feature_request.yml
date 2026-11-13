@@ -1,0 +1,27 @@
+name: Feature request
+description: Suggest an improvement to the SRM model, validation tests, or documentation.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Describe the modeling, validation, or usability gap.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What would you like to change or add?
+  - type: dropdown
+    id: contribute
+    attributes:
+      label: Would you like to work on this?
+      options:
+        - "Yes, I can open a pull request"
+        - "Maybe, with guidance"
+        - "No"
+    validations:
+      required: true

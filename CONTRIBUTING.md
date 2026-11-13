@@ -1,79 +1,45 @@
 # Contributing
 
-**Course project — MCTR 908 Electric Drives · German University in Cairo · Spring 2026**
-**Team 13:** Ahmed Mostafa (55-1591) · Andrew Abdelmalak (55-22771) · Adham Bassem (55-21599) · Ahmed Mansour (55-0253)
+We welcome bug fixes, documentation improvements, and extensions to the 6/4 switched reluctance motor model and validation suite.
 
-This repository is a graded academic submission. Contributions are limited to the four registered team members. External pull requests are not accepted.
+## Setup
 
----
-
-## Branching
-
-Work on feature branches off `main`. Branch naming: `type/short-description`
-
-```
-feat/tc6-advanced-angle
-fix/inductance-lut-boundary
-docs/update-readme
-```
-
-Merge to `main` via pull request with at least one team-member review.
-
-## Commit Messages
-
-Follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/):
-
-```
-feat(src): add TC6 advance-angle test
-fix(paper): correct TC3 steady-state current value
-docs(readme): update parameter table with new Imax
-chore: regenerate all results figures
-```
-
-- Subject line ≤ 50 characters, imperative mood
-- Blank line between subject and body
-- Body explains *why*, not *what*
-- `BREAKING CHANGE:` footer for any change that alters the authoritative parameter set
-
-## File Roles
-
-| Path | Owner | Notes |
-|---|---|---|
-| `src/SRM_params.m` | All | **Single source of truth** for all parameters — edit together |
-| `src/SRM_Project.slx` | MATLAB users | Keep in sync with SRM_params.m |
-| `validation/srm_validation.py` | Python users | Must match SRM_params.m parameter values |
-| `paper/main.tex` | All | IEEE paper — no placeholder text in main |
-| `results/` | Auto-generated | Run `python validation/srm_validation.py --all` to regenerate |
-
-## Running the simulation
+Install Python 3.11 or later and [`uv`](https://docs.astral.sh/uv/), then sync the locked development environment:
 
 ```bash
-# MATLAB/Simulink
-run('src/SRM_params.m'); sim('src/SRM_Project.slx')
-
-# Python validation (all 5 test cases)
-pip install -r requirements.txt
-python validation/srm_validation.py --all
+uv sync --locked --all-groups
 ```
 
-## Updating the paper figures
+## Lint, test, and run checks
 
-1. Run `python validation/srm_validation.py --all`
-2. Copy updated PDFs from `results/` to `paper/`
-3. Commit: `chore(results): regenerate TC figures`
+CI runs these exact commands on every pull request targeting `main`:
 
-## Code style
-
-- MATLAB: no magic numbers — all constants come from `SRM_params.m`
-- Python: PEP 8; constants in SCREAMING_SNAKE_CASE at module top
-- LaTeX: one sentence per line; comment every major block
-
-## Releases
-
-Tag each milestone submission:
-
-```
-git tag -a v0.X.0 -m "MilestoneN — MCTR 908"
+```bash
+uv run ruff check .
+uv run ruff format --check .
+uv run pytest -v
+uv run python validation/srm_validation.py --all
 ```
 
-Current release: **v1.1.0** (post-submission review, 2026-06-23)
+Keep `src/SRM_params.m` and `validation/srm_validation.py` in sync whenever machine or controller parameters change. `tests/test_srm_validation.py` verifies parameter consistency automatically.
+
+## Compiling the paper
+
+Run `latexmk` from `paper/` with TeX Live 2025 (or the pinned Docker image used in CI):
+
+```bash
+docker run --rm --network=none -u "$(id -u):$(id -g)" -v "$PWD:/work" -w /work/paper \
+  texlive/texlive:TL2025-historic@sha256:7056390eac37715fd3e01875037ceb4016cb17d44c611f7bbbfa7a012007979f \
+  latexmk -pdf -no-shell-escape -interaction=nonstopmode -halt-on-error main.tex
+```
+
+Copy `paper/main.pdf` to `docs/SRM_Speed_Torque_Control_Paper.pdf` when updating the manuscript, and remove LaTeX auxiliary files before committing.
+
+## Pull requests and commits
+
+1. Branch from `main` using a descriptive name (`fix/lut-boundary`, `feat/angle-advance`, `docs/update-setup`).
+2. Write commit messages using [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) (`feat(scope): summary`, `fix(scope): summary`, `docs(scope): summary`, `test(scope): summary`, `chore(scope): summary`).
+3. Open a pull request against `main` and fill out `.github/pull_request_template.md`.
+4. Do not commit secrets, local paths, or unverified metrics.
+
+By contributing, you agree that your contributions are licensed under the [MIT License](LICENSE).

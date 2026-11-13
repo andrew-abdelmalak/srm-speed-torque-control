@@ -1,0 +1,52 @@
+name: Bug report
+description: Report a bug in the Python simulation, MATLAB/Octave scripts, or LaTeX paper.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. For security problems, do not use this form; follow `.github/SECURITY.md` instead.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you run, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Minimal commands or test case parameters that trigger the problem.
+      placeholder: |
+        1. uv run python validation/srm_validation.py --tc 1
+        2. ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Commit or release tag
+      description: Run `git rev-parse --short HEAD` or `git describe --tags`.
+      placeholder: "v1.2.0"
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Python version, and MATLAB/Octave/TeX Live version if relevant.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or error output
+      description: Paste relevant output. Remove any local paths or personal details if needed.
+      render: shell
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and this is not a duplicate.
+          required: true
