@@ -465,7 +465,7 @@ def plot_operating_envelope(all_data: dict[int, dict[str, np.ndarray]], out_dir:
     ax.legend(loc="upper left", bbox_to_anchor=(0.13, 0.98), frameon=True)
     ax.text(0.03, 0.90, "(d)", transform=ax.transAxes, fontweight="bold", fontsize=9)
     ax.text(
-        0.40,
+        0.34,
         0.16,
         "Torque follows the rising load\nwhile speed stays near 100 rad/s",
         transform=ax.transAxes,
