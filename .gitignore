@@ -20,6 +20,10 @@ __pycache__/
 .venv/
 venv/
 env/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 *.egg-info/
 dist/
 build/

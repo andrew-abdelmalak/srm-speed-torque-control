@@ -1,0 +1,4 @@
+docs/** linguist-documentation=true
+paper/** linguist-documentation=true
+results/** linguist-documentation=true
+paper/IEEEtran.cls linguist-vendored=true
