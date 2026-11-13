@@ -1,8 +1,32 @@
 # Changelog
 
 All notable changes to this project are documented here.
-Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+---
+
+## [1.2.0] - 2026-11-14
+
+### Added
+- `pyproject.toml` and `uv.lock` with a 14-day `exclude-newer` cooldown, replacing `requirements.txt`.
+- `tests/test_srm_validation.py` covering MATLAB/Python parameter parity, inductance LUT periodicity and slope signs, cubic TSF boundary slopes and partition of unity, TC1 back-to-back tolerances, TC2 to TC5 operating-envelope invariants, and figure generation.
+- `plot_operating_envelope()` and `plot_validation_summary()` in `validation/srm_validation.py` so `--all` regenerates both composite paper figures (`paper/fig_operating_envelope.*`, `paper/fig_validation_summary.*`) alongside `results/fig_tc1..5.*` with deterministic PDF metadata.
+- SHA-pinned GitHub Actions workflows (`.github/workflows/ci.yml` and `.github/workflows/paper.yml`) and monthly grouped `.github/dependabot.yml` with a 14-day cooldown.
+- Community health files: `.github/SECURITY.md`, `.github/CODE_OF_CONDUCT.md`, `.github/SUPPORT.md`, `.github/pull_request_template.md`, `.github/ISSUE_TEMPLATE/`, and `CITATION.cff`.
+- Light/dark SVG architecture diagrams (`docs/diagrams/`) and social preview assets (`docs/social-preview.svg`, `docs/social-preview.png`).
+- `.gitattributes` marking `docs/`, `paper/`, and `results/` as documentation and `paper/IEEEtran.cls` as vendored.
+
+### Changed
+- Consolidated the paper results around `paper/fig_operating_envelope` and `paper/fig_validation_summary` and updated `docs/SRM_Speed_Torque_Control_Paper.pdf` (incorporating the `2026-07-02` paper and README restructuring that followed `v1.1.0`).
+- Updated `README.md` and `CONTRIBUTING.md` to use `uv`, active first-person plural voice, and reproducible commands without student IDs.
+- Fixed panel (b) table column widths in `paper/fig_validation_summary.*` and panel (d) legend placement in `paper/fig_operating_envelope.*`.
+
+### Fixed
+- Fixed floating-point truncation in `validation/srm_validation.py` (`N = round(TSIM / TS)`) so all runs execute the full 50,000 steps (5,000 decimated samples) instead of 4,999.
+- Fixed `results/fig_tc4.*` plotting a flat 100 rad/s reference line instead of the 0 to 100 rad/s speed ramp.
+- Replaced unverified `Zhu2015` in `paper/references.bib` and `paper/main.tex` with verified citation `Ye2015` (doi `10.1109/TPEL.2014.2316272`) and added DOIs to journal and conference entries.
+- Removed university student IDs and resolved LaTeX `Overfull \hbox` warnings in `paper/main.tex`.
 
 ---
 
