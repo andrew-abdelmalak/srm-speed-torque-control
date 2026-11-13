@@ -7,7 +7,6 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-
 import srm_validation as srm
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -74,7 +73,7 @@ def test_inductance_lut_invariants() -> None:
         assert l0 == pytest.approx(l1)
         assert dl0 == pytest.approx(dl1)
 
-    # Interior of rising [0, 38 deg], flat [38, 43 deg], falling [43, 81 deg], unaligned [81, 90 deg]
+    # Interior of rising [0, 38], flat [38, 43], falling [43, 81], unaligned [81, 90] deg
     _, dl_rise = srm.lut(float(np.deg2rad(19.0)))
     _, dl_flat = srm.lut(float(np.deg2rad(40.5)))
     _, dl_fall = srm.lut(float(np.deg2rad(62.0)))

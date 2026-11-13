@@ -332,10 +332,10 @@ def _apply_plot_style() -> None:
 
 
 def _save_figure(fig: plt.Figure, out_dir: Path, stem_name: str) -> Path:
-    """Save figure as both PDF and PNG and close it."""
+    """Save figure as both deterministic PDF and PNG and close it."""
     out_dir.mkdir(parents=True, exist_ok=True)
     stem = out_dir / stem_name
-    fig.savefig(f"{stem}.pdf", dpi=200, bbox_inches="tight")
+    fig.savefig(f"{stem}.pdf", dpi=200, bbox_inches="tight", metadata={"CreationDate": None})
     fig.savefig(f"{stem}.png", dpi=200, bbox_inches="tight")
     plt.close(fig)
     print(f"  Figure saved : {stem}.pdf / .png")
