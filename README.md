@@ -112,6 +112,7 @@ Comparing the Python forward-Euler mirror against the archived Simulink `ode4` m
 | 10 to 90% rise time | $29.4\ \text{ms}$ | $32.4\ \text{ms}$ | $3.0\ \text{ms}$ |
 | Mean steady-state torque | $1.601\ \text{N}\cdot\text{m}$ | $1.600\ \text{N}\cdot\text{m}$ | $0.09\%$ |
 | Peak phase current | $7.21\ \text{A}$ | $7.269\ \text{A}$ | $0.82\%$ |
+| Torque ripple RMS | $0.337\ \text{N}\cdot\text{m}$ | $0.060\ \text{N}\cdot\text{m}$ | Not reproduced |
 
 <p align="center">
   <img src="paper/fig_validation_summary.png" width="840" alt="TC1 reproducibility summary comparing the Python speed step response and rise-time markers against archived Simulink validation metrics.">
@@ -120,6 +121,7 @@ Comparing the Python forward-Euler mirror against the archived Simulink `ode4` m
 ## Validation scope and limitations
 
 - **Simulation only:** We validated this drive in simulation (`MATLAB/Simulink` and Python) without a physical SRM or inverter test bench.
+- **Torque ripple discrepancy:** Torque ripple does not match: the archived Simulink run gives $0.337\ \text{N}\cdot\text{m}$ RMS, while the Python rerun gives $0.060\ \text{N}\cdot\text{m}$ RMS. Ripple is the most solver-sensitive metric, so we do not claim it is reproduced.
 - **Archived Simulink artifacts:** `src/SRM_Project.slx` was last saved in an intermediate `0.2 s` test configuration and raw `.mat` time-series exports were not archived. All reproducible waveform plots come from `validation/srm_validation.py`, while Simulink comparison values come from `docs/Validation_Report.pdf`.
 - **Linear magnetic model:** Inductance $L(\theta)$ is piecewise linear and independent of phase current, so magnetic saturation is not modeled.
 - **Fixed firing angles:** Turn-on ($\theta_{\text{on}} = 0^\circ$) and turn-off ($\theta_{\text{off}} = 38^\circ$) angles are fixed rather than scheduled with speed.
