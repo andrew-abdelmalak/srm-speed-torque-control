@@ -1,0 +1,33 @@
+[project]
+name = "srm-speed-torque-control"
+version = "1.2.0"
+description = "Independent Python validation and MATLAB/Simulink model for a cascaded 6/4 switched reluctance motor drive."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.11"
+dependencies = [
+    "matplotlib>=3.10,<4",
+    "numpy>=2.2,<3",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.9",
+]
+
+[tool.uv]
+package = false
+exclude-newer = "14 days"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [".", "validation"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "C4", "RET", "RUF", "EXE"]
+ignore = ["RUF001", "RUF002", "RUF003"]

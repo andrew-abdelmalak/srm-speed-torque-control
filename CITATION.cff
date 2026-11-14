@@ -1,0 +1,39 @@
+cff-version: 1.2.0
+message: "If you use this software or paper, please cite it using these details."
+title: "SRM Speed and Torque Control"
+abstract: "We implemented a cascaded speed and torque control system for a three-phase 6/4 switched reluctance motor combining an outer PI speed regulator, a cubic torque sharing function (TSF), nonlinear torque-to-current inversion, hysteresis current control, and an asymmetric half-bridge converter in MATLAB/Simulink, alongside an independent Python forward-Euler reproduction."
+authors:
+  - family-names: "Mostafa"
+    given-names: "Ahmed"
+  - family-names: "Abdelmalak"
+    given-names: "Andrew"
+  - family-names: "Bassem"
+    given-names: "Adham"
+  - family-names: "Mansour"
+    given-names: "Ahmed"
+version: "1.2.0"
+date-released: "2026-11-14"
+license: "MIT"
+repository-code: "https://github.com/andrew-abdelmalak/srm-speed-torque-control"
+keywords:
+  - "switched reluctance motor"
+  - "torque sharing function"
+  - "hysteresis current control"
+  - "electric drives"
+  - "simulink"
+  - "python"
+preferred-citation:
+  type: conference-paper
+  title: "Cascaded Speed and Torque Control of a 6/4 Switched Reluctance Motor with Cubic Torque Sharing and Independent Python Reproduction"
+  authors:
+    - family-names: "Mostafa"
+      given-names: "Ahmed"
+    - family-names: "Abdelmalak"
+      given-names: "Andrew"
+    - family-names: "Bassem"
+      given-names: "Adham"
+    - family-names: "Mansour"
+      given-names: "Ahmed"
+  year: 2026
+  institution:
+    name: "German University in Cairo"
