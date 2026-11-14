@@ -386,8 +386,8 @@ The archived Simulink TC1 reference gives 99.94~rad/s steady-state speed, 29.4~m
 The current Python rerun gives 99.998~rad/s, 32.4~ms, 1.600~N\,m, and 7.269~A, respectively.
 In relative terms that means 0.06\% speed difference, 0.09\% mean-torque difference, and 0.82\% peak-current difference.
 
-The only visible transient gap is rise time, where the rerun is 3.0~ms slower.
-That difference is physically explainable.
+Two metrics differ visibly: rise time, where the rerun is 3.0~ms slower, and torque ripple, where the archived Simulink run gives 0.337~N\,m RMS against 0.060~N\,m for the rerun.
+The rise-time difference is physically explainable.
 The Simulink reference was generated with fixed-step fourth-order Runge--Kutta, whereas the repository mirror integrates with forward Euler.
 Both solve the same electromechanical model, but the lower-order solver resolves the fast startup current build-up less aggressively.
 The archived validation report also flagged torque-ripple detail as the most solver-sensitive quantity, which is consistent with the fact that ripple depends strongly on how the inductance gradient is discretized and on how accurately the switching instants are resolved.
